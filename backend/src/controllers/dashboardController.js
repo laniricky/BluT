@@ -1,6 +1,7 @@
 import Video from '../models/Video.js';
-import Subscription from '../models/Subscription.js';
+
 import Like from '../models/Like.js';
+import Follow from '../models/Follow.js';
 
 // @route   GET /api/dashboard/stats
 // @desc    Get creator dashboard statistics
@@ -10,7 +11,7 @@ export const getCreatorStats = async (req, res) => {
         const userId = req.user.id;
 
         // 1. Total Subscribers
-        const subscribersCount = await Subscription.countDocuments({ channel: userId });
+        const subscribersCount = await Follow.countDocuments({ following: userId });
 
         // 2. Get all videos by user to calculate views and likes
         const videos = await Video.find({ user: userId }).sort({ createdAt: -1 });

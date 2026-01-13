@@ -1,6 +1,6 @@
 import Video from '../models/Video.js';
 import Like from '../models/Like.js';
-import Subscription from '../models/Subscription.js';
+import Follow from '../models/Follow.js';
 import Notification from '../models/Notification.js';
 import fs from 'fs';
 import path from 'path';
@@ -109,12 +109,12 @@ export const getVideoById = async (req, res) => {
         // Get likes count
         const likesCount = await Like.countDocuments({ video: req.params.id });
 
-        // Get subscribers count for the creator
-        const subscribersCount = await Subscription.countDocuments({ channel: video.user._id });
+        // Get followers count for the creator
+        const followersCount = await Follow.countDocuments({ following: video.user._id });
 
-        // Check if current user is subscribed
+        // Check if current user is following
         let isLiked = false;
-        let isSubscribed = false;
+        let isFollowing = false;
 
         if (req.user) {
             isLiked = await Like.exists({
@@ -122,9 +122,9 @@ export const getVideoById = async (req, res) => {
                 video: req.params.id
             });
 
-            isSubscribed = await Subscription.exists({
-                subscriber: req.user._id,
-                channel: video.user._id
+            isFollowing = await Follow.exists({
+                follower: req.user._id,
+                following: video.user._id
             });
         }
 
@@ -136,8 +136,8 @@ export const getVideoById = async (req, res) => {
                 isLiked: !!isLiked,
                 user: {
                     ...video.user.toObject(),
-                    subscribersCount,
-                    isSubscribed: !!isSubscribed
+                    followersCount,
+                    isFollowing: !!isFollowing
                 }
             }
         });

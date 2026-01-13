@@ -4,7 +4,7 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import VideoGrid from '../components/VideoGrid';
-import SubscribeButton from '../components/SubscribeButton';
+import FollowButton from '../components/FollowButton';
 import EditProfileModal from '../components/EditProfileModal';
 import { FaUserEdit, FaCalendarAlt } from 'react-icons/fa';
 
@@ -46,12 +46,12 @@ const ProfilePage = () => {
         fetchProfileData();
     }, [username]);
 
-    // Handle subscriber count update from child component
-    const handleSubscribeToggle = (newIsSubscribed) => {
+    // Handle follower count update from child component
+    const handleSubscribeToggle = (newIsFollowing) => {
         setProfile(prev => ({
             ...prev,
-            isSubscribed: newIsSubscribed,
-            subscribersCount: prev.subscribersCount + (newIsSubscribed ? 1 : -1)
+            isFollowing: newIsFollowing,
+            followersCount: prev.followersCount + (newIsFollowing ? 1 : -1)
         }));
     };
 
@@ -112,7 +112,7 @@ const ProfilePage = () => {
                         <div className="flex items-center gap-4 text-sm text-gray-400 mt-2">
                             <span>@{profile.username}</span>
                             <span>•</span>
-                            <span>{profile.subscribersCount.toLocaleString()} subscribers</span>
+                            <span>{profile.followersCount.toLocaleString()} followers</span>
                             <span>•</span>
                             <span>{profile.videosCount} videos</span>
                         </div>
@@ -138,9 +138,9 @@ const ProfilePage = () => {
                                 Edit Profile
                             </button>
                         ) : (
-                            <SubscribeButton
+                            <FollowButton
                                 channelId={profile._id}
-                                initialIsSubscribed={profile.isSubscribed}
+                                initialIsFollowing={profile.isFollowing}
                                 onToggle={handleSubscribeToggle}
                                 large
                             />

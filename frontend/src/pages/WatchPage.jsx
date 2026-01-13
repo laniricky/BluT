@@ -6,7 +6,7 @@ import { FaThumbsUp, FaRegThumbsUp, FaShare, FaEye, FaTrash } from 'react-icons/
 
 import Navbar from '../components/Navbar';
 import CommentSection from '../components/CommentSection';
-import SubscribeButton from '../components/SubscribeButton';
+import FollowButton from '../components/FollowButton';
 import VideoRecommendations from '../components/VideoRecommendations';
 import { VideoPlayerSkeleton, CommentSkeleton } from '../components/LoadingSkeleton';
 import Tooltip from '../components/Tooltip';
@@ -101,7 +101,7 @@ const WatchPage = () => {
                     setVideo(response.data.data);
                     setIsLiked(response.data.data.isLiked);
                     setLikesCount(response.data.data.likesCount);
-                    // Subscription status is handled inside the video object now (video.user.isSubscribed)
+                    // Subscription status is handled inside the video object now (video.user.isFollowing)
                 } else {
                     setError('Failed to load video');
                 }
@@ -325,22 +325,22 @@ const WatchPage = () => {
                                                 {video.user?.username || 'Unknown User'}
                                             </h3>
                                             <span className="text-gray-400 text-sm">
-                                                {video.user?.subscribersCount?.toLocaleString() || 0} subscribers
+                                                {video.user?.followersCount?.toLocaleString() || 0} followers
                                             </span>
                                         </div>
                                         <div className="mt-2">
                                             {video.user && (
-                                                <SubscribeButton
+                                                <FollowButton
                                                     channelId={video.user._id}
-                                                    initialIsSubscribed={video.user.isSubscribed}
+                                                    initialIsFollowing={video.user.isFollowing}
                                                     onToggle={(newStatus) => {
-                                                        // Update local video state to reflect new subscriber count
+                                                        // Update local video state to reflect new follower count
                                                         setVideo(prev => ({
                                                             ...prev,
                                                             user: {
                                                                 ...prev.user,
-                                                                subscribersCount: prev.user.subscribersCount + (newStatus ? 1 : -1),
-                                                                isSubscribed: newStatus
+                                                                followersCount: prev.user.followersCount + (newStatus ? 1 : -1),
+                                                                isFollowing: newStatus
                                                             }
                                                         }));
                                                     }}

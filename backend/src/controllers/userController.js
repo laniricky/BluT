@@ -1,6 +1,6 @@
 import User from '../models/User.js';
 import Video from '../models/Video.js';
-import Subscription from '../models/Subscription.js';
+import Follow from '../models/Follow.js';
 import Notification from '../models/Notification.js';
 
 // @route   GET /api/users/:username
@@ -15,18 +15,18 @@ export const getUserProfile = async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        // Get subscriber count
-        const subscribersCount = await Subscription.countDocuments({ channel: user._id });
+        // Get follower count
+        const followersCount = await Follow.countDocuments({ following: user._id });
 
         // Get video count
         const videosCount = await Video.countDocuments({ user: user._id });
 
-        // Check if current logged-in user is subscribed
-        let isSubscribed = false;
+        // Check if current logged-in user is following
+        let isFollowing = false;
         if (req.user) {
-            isSubscribed = await Subscription.exists({
-                subscriber: req.user._id,
-                channel: user._id,
+            isFollowing = await Follow.exists({
+                follower: req.user._id,
+                following: user._id,
             });
         }
 
@@ -34,9 +34,9 @@ export const getUserProfile = async (req, res) => {
             success: true,
             user: {
                 ...user.toObject(),
-                subscribersCount,
+                followersCount,
                 videosCount,
-                isSubscribed: !!isSubscribed,
+                isFollowing: !!isFollowing,
             },
         });
     } catch (error) {
@@ -70,50 +70,50 @@ export const updateProfile = async (req, res) => {
     }
 };
 
-// @route   POST /api/users/:id/subscribe
-// @desc    Subscribe/Unsubscribe to a user
+// @route   POST /api/users/:id/follow
+// @desc    Follow/Unfollow a user
 // @access  Private
-export const toggleSubscribe = async (req, res) => {
+export const toggleFollow = async (req, res) => {
     try {
-        const channelId = req.params.id;
+        const followingId = req.params.id;
 
-        if (channelId === req.user.id) {
-            return res.status(400).json({ success: false, message: 'Cannot subscribe to yourself' });
+        if (followingId === req.user.id) {
+            return res.status(400).json({ success: false, message: 'Cannot follow yourself' });
         }
 
-        const channel = await User.findById(channelId);
-        if (!channel) {
-            return res.status(404).json({ success: false, message: 'Channel not found' });
+        const userToFollow = await User.findById(followingId);
+        if (!userToFollow) {
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        const existingSub = await Subscription.findOne({
-            subscriber: req.user.id,
-            channel: channelId,
+        const existingFollow = await Follow.findOne({
+            follower: req.user.id,
+            following: followingId,
         });
 
-        if (existingSub) {
-            // Unsubscribe
-            await Subscription.findByIdAndDelete(existingSub._id);
-            return res.json({ success: true, message: 'Unsubscribed', isSubscribed: false });
+        if (existingFollow) {
+            // Unfollow
+            await Follow.findByIdAndDelete(existingFollow._id);
+            return res.json({ success: true, message: 'Unfollowed', isFollowing: false });
         } else {
-            // Subscribe
-            await Subscription.create({
-                subscriber: req.user.id,
-                channel: channelId,
+            // Follow
+            await Follow.create({
+                follower: req.user.id,
+                following: followingId,
             });
 
             // Create Notification
             await Notification.create({
-                recipient: channelId,
+                recipient: followingId,
                 sender: req.user.id,
-                type: 'subscribe'
+                type: 'follow'
             });
 
-            return res.json({ success: true, message: 'Subscribed', isSubscribed: true });
+            return res.json({ success: true, message: 'Followed', isFollowing: true });
         }
     } catch (error) {
-        console.error('Subscribe toggle error:', error);
-        res.status(500).json({ success: false, message: 'Server error toggling subscription' });
+        console.error('Follow toggle error:', error);
+        res.status(500).json({ success: false, message: 'Server error toggling follow' });
     }
 };
 
