@@ -7,6 +7,9 @@ import { FaThumbsUp, FaRegThumbsUp, FaShare, FaEye, FaTrash } from 'react-icons/
 import Navbar from '../components/Navbar';
 import CommentSection from '../components/CommentSection';
 import SubscribeButton from '../components/SubscribeButton';
+import VideoRecommendations from '../components/VideoRecommendations';
+import { VideoPlayerSkeleton, CommentSkeleton } from '../components/LoadingSkeleton';
+import Tooltip from '../components/Tooltip';
 
 const WatchPage = () => {
     const { id } = useParams();
@@ -113,6 +116,61 @@ const WatchPage = () => {
         fetchVideo();
     }, [id]);
 
+    // Keyboard Shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            // Ignore shortcuts if user is typing in comments or search
+            if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+            const video = videoRef.current;
+            if (!video) return;
+
+            switch (e.key.toLowerCase()) {
+                case ' ':
+                case 'k':
+                    e.preventDefault();
+                    video.paused ? video.play() : video.pause();
+                    break;
+                case 'f':
+                    e.preventDefault();
+                    if (document.fullscreenElement) {
+                        document.exitFullscreen();
+                    } else {
+                        video.parentElement.requestFullscreen();
+                    }
+                    break;
+                case 'm':
+                    video.muted = !video.muted;
+                    break;
+                case 'j':
+                    video.currentTime = Math.max(0, video.currentTime - 10);
+                    break;
+                case 'l':
+                    video.currentTime = Math.min(video.duration, video.currentTime + 10);
+                    break;
+                case 'arrowleft':
+                    video.currentTime = Math.max(0, video.currentTime - 5);
+                    break;
+                case 'arrowright':
+                    video.currentTime = Math.min(video.duration, video.currentTime + 5);
+                    break;
+                case 'arrowup':
+                    e.preventDefault(); // Prevent page scroll
+                    video.volume = Math.min(1, video.volume + 0.1);
+                    break;
+                case 'arrowdown':
+                    e.preventDefault(); // Prevent page scroll
+                    video.volume = Math.max(0, video.volume - 0.1);
+                    break;
+                default:
+                    break;
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     const handleLike = async () => {
         if (!isAuthenticated) {
             alert("Please login to like videos!");
@@ -143,10 +201,35 @@ const WatchPage = () => {
         }
     };
 
+
+
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#0F172A] flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            <div className="min-h-screen bg-[#0F172A] pb-10">
+                <Navbar />
+                <div className="pt-8 px-4 md:px-8">
+                    <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-2">
+                            <VideoPlayerSkeleton />
+                            <CommentSkeleton />
+                        </div>
+                        <div className="hidden lg:block">
+                            {/* Recommendation Skeleton */}
+                            <div className="space-y-4">
+                                <div className="h-6 bg-[#1E293B] rounded w-1/3 mb-4 animate-pulse"></div>
+                                {[1, 2, 3, 4, 5].map((i) => (
+                                    <div key={i} className="flex gap-3 animate-pulse">
+                                        <div className="w-40 aspect-video bg-[#1E293B] rounded-lg"></div>
+                                        <div className="flex-1 space-y-2">
+                                            <div className="h-4 bg-[#1E293B] rounded w-3/4"></div>
+                                            <div className="h-3 bg-[#1E293B] rounded w-1/2"></div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -200,28 +283,35 @@ const WatchPage = () => {
                                 </div>
 
                                 <div className="flex items-center gap-4 mt-3 md:mt-0">
-                                    <button
-                                        onClick={handleLike}
-                                        className={`flex items-center gap-2 px-4 py-2 ${isLiked ? 'bg-blue-600 hover:bg-blue-700' : 'bg-[#1E293B] hover:bg-[#334155]'} text-white rounded-full transition-colors font-medium text-sm`}
-                                    >
-                                        {isLiked ? <FaThumbsUp /> : <FaRegThumbsUp />}
-                                        {likesCount > 0 ? likesCount : 'Like'}
-                                    </button>
-                                    <button className="flex items-center gap-2 px-4 py-2 bg-[#1E293B] hover:bg-[#334155] text-white rounded-full transition-colors font-medium text-sm">
-                                        <FaShare /> Share
-                                    </button>
-                                    {isAuthenticated && video.user && user && (video.user._id === user._id || video.user === user._id) && (
+                                    <Tooltip text={isLiked ? "Unlike video" : "Like video"}>
                                         <button
-                                            onClick={handleDelete}
-                                            className="flex items-center gap-2 px-4 py-2 bg-red-600/10 hover:bg-red-600/20 text-red-500 rounded-full transition-colors font-medium text-sm border border-red-600/20"
+                                            onClick={handleLike}
+                                            className={`flex items-center gap-2 px-4 py-2 ${isLiked ? 'bg-blue-600 hover:bg-blue-700' : 'bg-[#1E293B] hover:bg-[#334155]'} text-white rounded-full transition-colors font-medium text-sm`}
                                         >
-                                            <FaTrash /> Delete
+                                            {isLiked ? <FaThumbsUp /> : <FaRegThumbsUp />}
+                                            {likesCount > 0 ? likesCount : 'Like'}
                                         </button>
+                                    </Tooltip>
+
+                                    <Tooltip text="Share with friends">
+                                        <button className="flex items-center gap-2 px-4 py-2 bg-[#1E293B] hover:bg-[#334155] text-white rounded-full transition-colors font-medium text-sm">
+                                            <FaShare /> Share
+                                        </button>
+                                    </Tooltip>
+
+                                    {isAuthenticated && video.user && user && (video.user._id === user._id || video.user === user._id) && (
+                                        <Tooltip text="Delete your video permanently">
+                                            <button
+                                                onClick={handleDelete}
+                                                className="flex items-center gap-2 px-4 py-2 bg-red-600/10 hover:bg-red-600/20 text-red-500 rounded-full transition-colors font-medium text-sm border border-red-600/20"
+                                            >
+                                                <FaTrash /> Delete
+                                            </button>
+                                        </Tooltip>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Description & Creator */}
                             <div className="mt-4 p-4 bg-[#1E293B]/50 rounded-xl hover:bg-[#1E293B] transition-colors cursor-default">
                                 <div className="flex items-start gap-4">
                                     <img
@@ -264,25 +354,33 @@ const WatchPage = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Mobile Recommendations (Visible only on lg screens and below - wait, no, logic is: visible on mobile, hidden on desktop... wait) */}
+                        {/* Actually, the sidebar recommendations are hidden on mobile. We want to show them on mobile.
+                            But if we just unhide the sidebar, it will appear BELOW the comments in current grid layout if we use col-span-3? No, it's col-span-1.
+                            
+                            Current Layout:
+                            [ Video + Info + Comments ] [ Recommendations ]
+                            
+                            On mobile (grid-cols-1):
+                            [ Video + Info + Comments ]
+                            [ Recommendations ]
+                            
+                            This puts Recommendations AFTER comments.
+                            We want Recommendations AFTER Info but BEFORE Comments on mobile.
+                            
+                            So we add a block HERE for mobile recommendations.
+                        */}
+                        <div className="lg:hidden mt-8">
+                            <VideoRecommendations currentVideoId={id} />
+                        </div>
+
                         <CommentSection videoId={id} />
                     </div>
 
-                    {/* Right Column: Recommended Videos (Placeholder for now) */}
+                    {/* Right Column: Recommended Videos (Desktop only) */}
                     <div className="hidden lg:block">
-                        <h3 className="text-white font-bold text-lg mb-4">Up Next</h3>
-                        <div className="space-y-4">
-                            {[1, 2, 3, 4, 5].map((item) => (
-                                <div key={item} className="flex gap-3 cursor-pointer group">
-                                    <div className="w-40 aspect-video bg-gray-800 rounded-lg overflow-hidden relative">
-                                        <div className="absolute inset-0 bg-gray-700 animate-pulse"></div>
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="h-4 bg-gray-700 rounded w-3/4 mb-2 animate-pulse"></div>
-                                        <div className="h-3 bg-gray-700 rounded w-1/2 animate-pulse"></div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        <VideoRecommendations currentVideoId={id} />
                     </div>
                 </div>
             </div>

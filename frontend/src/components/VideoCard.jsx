@@ -33,6 +33,16 @@ const VideoCard = ({ video }) => {
                     <div className='text-zinc-400 text-xs'>
                         {video.views} views • {new Date(video.createdAt).toLocaleDateString()}
                     </div>
+                    {/* Tags Display */}
+                    {video.tags && video.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                            {video.tags.slice(0, 3).map((tag, idx) => (
+                                <span key={idx} className="text-[10px] bg-slate-700/50 text-slate-300 px-1.5 py-0.5 rounded border border-slate-700">
+                                    #{tag}
+                                </span>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import Video from '../models/Video.js';
 import Subscription from '../models/Subscription.js';
+import Notification from '../models/Notification.js';
 
 // @route   GET /api/users/:username
 // @desc    Get user profile data
@@ -100,6 +101,14 @@ export const toggleSubscribe = async (req, res) => {
                 subscriber: req.user.id,
                 channel: channelId,
             });
+
+            // Create Notification
+            await Notification.create({
+                recipient: channelId,
+                sender: req.user.id,
+                type: 'subscribe'
+            });
+
             return res.json({ success: true, message: 'Subscribed', isSubscribed: true });
         }
     } catch (error) {

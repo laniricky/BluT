@@ -1,6 +1,7 @@
 import Video from '../models/Video.js';
 import Like from '../models/Like.js';
 import Subscription from '../models/Subscription.js';
+import Notification from '../models/Notification.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -14,9 +15,67 @@ export const getVideos = async (req, res) => {
             query = { $text: { $search: req.query.search } };
         }
 
-        const videos = await Video.find(query)
+        if (req.query.category && req.query.category !== 'All') {
+            query.category = req.query.category;
+        }
+
+        if (req.query.tag) {
+            query.tags = { $in: [req.query.tag] };
+        }
+
+        // Date Filtering
+        if (req.query.uploadDate) {
+            const now = new Date();
+            let dateQuery = {};
+
+            switch (req.query.uploadDate) {
+                case 'hour':
+                    dateQuery = { $gte: new Date(now.getTime() - 60 * 60 * 1000) };
+                    break;
+                case 'today':
+                    dateQuery = { $gte: new Date(now.setHours(0, 0, 0, 0)) };
+                    break;
+                case 'week':
+                    const weekAgo = new Date(now.setDate(now.getDate() - 7));
+                    dateQuery = { $gte: weekAgo };
+                    break;
+                case 'month':
+                    const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
+                    dateQuery = { $gte: monthAgo };
+                    break;
+                case 'year':
+                    const yearAgo = new Date(now.setFullYear(now.getFullYear() - 1));
+                    dateQuery = { $gte: yearAgo };
+                    break;
+            }
+            if (Object.keys(dateQuery).length > 0) {
+                query.createdAt = dateQuery;
+            }
+        }
+
+        // Determine sorting
+        const sortBy = req.query.sortBy || 'relevance';
+        const order = req.query.order === 'asc' ? 1 : -1;
+
+        let sortOptions = {};
+        if (sortBy === 'views') {
+            sortOptions = { views: order };
+        } else if (sortBy === 'createdAt') {
+            sortOptions = { createdAt: order };
+        } else if (sortBy === 'relevance' && req.query.search) {
+            // Sort by text score if searching
+            sortOptions = { score: { $meta: "textScore" } };
+        } else {
+            // Default fallback
+            sortOptions = { createdAt: -1 };
+        }
+
+        // Projection for text score
+        const projection = req.query.search ? { score: { $meta: "textScore" } } : {};
+
+        const videos = await Video.find(query, projection)
             .populate('user', 'username') // Populate user details
-            .sort({ createdAt: -1 }); // Newest first
+            .sort(sortOptions);
 
         res.json({
             success: true,
@@ -111,9 +170,19 @@ export const createVideo = async (req, res) => {
         const videoUrl = `${baseUrl}/uploads/videos/${videoFile.filename}`;
         const thumbnailUrl = `${baseUrl}/uploads/thumbnails/${thumbnailFile.filename}`;
 
+        const tagsInput = req.body.tags;
+        let tagsArray = [];
+        if (typeof tagsInput === 'string') {
+            tagsArray = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+        } else if (Array.isArray(tagsInput)) {
+            tagsArray = tagsInput;
+        }
+
         const video = await Video.create({
             title: req.body.title,
             description: req.body.description,
+            tags: tagsArray,
+            category: req.body.category || 'Other',
             videoUrl: videoUrl,
             thumbnailUrl: thumbnailUrl,
             user: req.user._id,
@@ -132,6 +201,7 @@ export const createVideo = async (req, res) => {
         });
     }
 };
+
 // @desc    Delete video
 // @route   DELETE /api/videos/:id
 // @access  Private
@@ -157,9 +227,6 @@ export const deleteVideo = async (req, res) => {
         // Delete files
         // Helper to safe delete
         const safeUnlink = (filePath) => {
-            // Construct absolute path from relative URL usually stored in DB
-            // For this project, DB stores e.g., http://localhost:5000/uploads/videos/filename.mp4
-            // We need c:\DEV\BluT\backend\uploads\videos\filename.mp4
             try {
                 const urlParts = filePath.split('/uploads/');
                 if (urlParts.length > 1) {
@@ -255,6 +322,17 @@ export const toggleLike = async (req, res) => {
                 user: req.user.id,
                 video: req.params.id
             });
+
+            // Create Notification (if not self-like)
+            if (video.user.toString() !== req.user.id) {
+                await Notification.create({
+                    recipient: video.user,
+                    sender: req.user.id,
+                    type: 'like',
+                    video: video._id
+                });
+            }
+
             return res.json({
                 success: true,
                 message: 'Video liked',
@@ -269,3 +347,63 @@ export const toggleLike = async (req, res) => {
         });
     }
 };
+
+// @desc    Get video recommendations
+// @route   GET /api/videos/:id/recommendations
+// @access  Public
+export const getRecommendations = async (req, res) => {
+    try {
+        const currentVideo = await Video.findById(req.params.id);
+
+        if (!currentVideo) {
+            return res.status(404).json({
+                success: false,
+                message: 'Video not found'
+            });
+        }
+
+        // Strategy: Get videos from same creator + videos with similar view counts
+        const sameCreatorVideos = await Video.find({
+            user: currentVideo.user,
+            _id: { $ne: req.params.id } // Exclude current video
+        })
+            .populate('user', 'username avatar')
+            .limit(5)
+            .sort({ createdAt: -1 });
+
+        // Get videos with similar view counts (±20%)
+        const minViews = currentVideo.views * 0.8;
+        const maxViews = currentVideo.views * 1.2;
+
+        const similarVideos = await Video.find({
+            _id: { $ne: req.params.id },
+            user: { $ne: currentVideo.user }, // From different creators
+            views: { $gte: minViews, $lte: maxViews }
+        })
+            .populate('user', 'username avatar')
+            .limit(5)
+            .sort({ createdAt: -1 });
+
+        // Combine and shuffle
+        let recommendations = [...sameCreatorVideos, ...similarVideos];
+
+        // Shuffle array
+        recommendations = recommendations.sort(() => Math.random() - 0.5);
+
+        // Limit to 10
+        recommendations = recommendations.slice(0, 10);
+
+        res.json({
+            success: true,
+            count: recommendations.length,
+            data: recommendations
+        });
+    } catch (error) {
+        console.error('Get recommendations error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server Error'
+        });
+    }
+};
+

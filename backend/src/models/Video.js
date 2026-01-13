@@ -33,6 +33,17 @@ const videoSchema = new mongoose.Schema(
             ref: 'User',
             required: true,
         },
+        tags: {
+            type: [String],
+            default: [],
+            index: true
+        },
+        category: {
+            type: String,
+            default: 'Other',
+            enum: ['Music', 'Gaming', 'Technology', 'Education', 'Vlog', 'Entertainment', 'Other'],
+            index: true
+        },
     },
     {
         timestamps: true,
@@ -40,7 +51,7 @@ const videoSchema = new mongoose.Schema(
 );
 
 // Add text index for search
-videoSchema.index({ title: 'text', description: 'text' });
+videoSchema.index({ title: 'text', description: 'text', tags: 'text' });
 
 const Video = mongoose.model('Video', videoSchema);
 

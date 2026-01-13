@@ -5,6 +5,7 @@ import connectDB from './config/database.js';
 import authRoutes from './routes/auth.js';
 import videoRoutes from './routes/videos.js';
 import userRoutes from './routes/users.js';
+import notificationRoutes from './routes/notifications.js';
 
 // Load environment variables
 dotenv.config();
@@ -17,8 +18,8 @@ connectDB();
 
 // Middleware
 app.use(cors()); // Enable CORS for all routes
-app.use(express.json()); // Parse JSON bodies
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
+app.use(express.json({ limit: '50mb' })); // Parse JSON bodies
+app.use(express.urlencoded({ extended: true, limit: '50mb' })); // Parse URL-encoded bodies
 
 // Serve static files
 import path from 'path';
@@ -32,6 +33,7 @@ app.use('/uploads', express.static(path.join(rootDir, 'uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

@@ -17,6 +17,23 @@ const commentSchema = new mongoose.Schema(
             ref: 'Video',
             required: true,
         },
+        parentId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Comment',
+            default: null,
+        },
+        likes: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+        }],
+        dislikes: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+        }],
+        isEdited: {
+            type: Boolean,
+            default: false,
+        },
     },
     {
         timestamps: true,

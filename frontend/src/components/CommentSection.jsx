@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import CommentItem from './CommentItem';
-import { FaPaperPlane, FaUserCircle } from 'react-icons/fa';
+import { FaUserCircle } from 'react-icons/fa';
+import { CommentSkeleton } from './LoadingSkeleton';
 
 const CommentSection = ({ videoId }) => {
     const { user, isAuthenticated } = useAuth();
@@ -28,6 +29,16 @@ const CommentSection = ({ videoId }) => {
         if (videoId) fetchComments();
     }, [videoId]);
 
+    // Group comments by parentId
+    const rootComments = useMemo(() => {
+        return comments.filter(c => !c.parentId);
+    }, [comments]);
+
+    const getReplies = (commentId) => {
+        return comments.filter(c => c.parentId === commentId)
+            .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); // Oldest first for replies
+    };
+
     const handleAddComment = async (e) => {
         e.preventDefault();
         if (!newComment.trim()) return;
@@ -50,13 +61,35 @@ const CommentSection = ({ videoId }) => {
         }
     };
 
+    const handleReply = async (parentId, content) => {
+        try {
+            const response = await api.post(`/videos/${videoId}/comments`, {
+                content,
+                parentId
+            });
+
+            if (response.data.success) {
+                setComments([...comments, response.data.data]);
+            }
+        } catch (error) {
+            console.error('Error adding reply:', error);
+            alert('Failed to post reply.');
+        }
+    };
+
+    const handleUpdateLocal = (updatedComment) => {
+        setComments(comments.map(c => c._id === updatedComment._id ? updatedComment : c));
+    };
+
     const handleDeleteComment = async (commentId) => {
         if (!window.confirm('Delete this comment?')) return;
 
         try {
-            const response = await api.delete(`/videos/comments/${commentId}`); // Note: path matches routes/videos.js
+            const response = await api.delete(`/videos/comments/${commentId}`);
             if (response.data.success) {
-                setComments(comments.filter(c => c._id !== commentId));
+                // Remove comment and any potential replies locally 
+                // (Backend handles actual data, filtered list updates UI)
+                setComments(comments.filter(c => c._id !== commentId && c.parentId !== commentId));
             }
         } catch (error) {
             console.error('Error deleting comment:', error);
@@ -100,8 +133,8 @@ const CommentSection = ({ videoId }) => {
                                     type="submit"
                                     disabled={!newComment.trim() || submitLoading}
                                     className={`px-4 py-2 rounded-full font-medium text-sm transition-colors ${newComment.trim() && !submitLoading
-                                            ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                                            : 'bg-[#1E293B] text-gray-500 cursor-not-allowed'
+                                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                        : 'bg-[#1E293B] text-gray-500 cursor-not-allowed'
                                         }`}
                                 >
                                     Comment
@@ -120,16 +153,17 @@ const CommentSection = ({ videoId }) => {
 
             {/* Comments List */}
             {loading ? (
-                <div className="flex justify-center py-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                </div>
+                <CommentSkeleton />
             ) : (
                 <div className="space-y-2">
-                    {comments.map(comment => (
+                    {rootComments.map(comment => (
                         <CommentItem
                             key={comment._id}
                             comment={comment}
                             onDelete={handleDeleteComment}
+                            onReply={handleReply}
+                            onUpdate={handleUpdateLocal}
+                            replies={getReplies(comment._id)}
                         />
                     ))}
                     {comments.length === 0 && (

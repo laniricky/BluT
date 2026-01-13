@@ -7,6 +7,8 @@ const UploadPage = () => {
     const navigate = useNavigate();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
+    const [tags, setTags] = useState('');
+    const [category, setCategory] = useState('Other');
     const [videoFile, setVideoFile] = useState(null);
     const [thumbnailFile, setThumbnailFile] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -32,6 +34,8 @@ const UploadPage = () => {
         const formData = new FormData();
         formData.append('title', title);
         formData.append('description', description);
+        formData.append('tags', tags);
+        formData.append('category', category);
         formData.append('video', videoFile);
         formData.append('thumbnail', thumbnailFile);
 
@@ -94,6 +98,31 @@ const UploadPage = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
+                            <label className="block text-gray-300 mb-2 font-medium">Category</label>
+                            <select
+                                value={category}
+                                onChange={(e) => setCategory(e.target.value)}
+                                className="w-full bg-[#0F172A] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none"
+                            >
+                                {['Other', 'Music', 'Gaming', 'Technology', 'Education', 'Vlog', 'Entertainment'].map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-gray-300 mb-2 font-medium">Tags (comma separated)</label>
+                            <input
+                                type="text"
+                                value={tags}
+                                onChange={(e) => setTags(e.target.value)}
+                                className="w-full bg-[#0F172A] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                                placeholder="react, coding, tutorial"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
                             <label className="block text-gray-300 mb-2 font-medium">Video File</label>
                             <input
                                 type="file"
@@ -120,8 +149,8 @@ const UploadPage = () => {
                         type="submit"
                         disabled={loading}
                         className={`w-full py-4 rounded-lg font-bold text-lg flex items-center justify-center gap-2 transition-all ${loading
-                                ? 'bg-gray-600 cursor-not-allowed'
-                                : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:scale-[1.02] shadow-lg shadow-blue-500/30 text-white'
+                            ? 'bg-gray-600 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:scale-[1.02] shadow-lg shadow-blue-500/30 text-white'
                             }`}
                     >
                         {loading ? (

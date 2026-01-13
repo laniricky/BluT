@@ -11,11 +11,18 @@ const HomePage = () => {
     const [videos, setVideos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [selectedCategory, setSelectedCategory] = useState('All');
 
     useEffect(() => {
         const fetchVideos = async () => {
+            setLoading(true);
             try {
-                const response = await api.get('/videos');
+                const params = {};
+                if (selectedCategory !== 'All') {
+                    params.category = selectedCategory;
+                }
+                const response = await api.get('/videos', { params });
+
                 if (response.data.success) {
                     setVideos(response.data.data);
                 } else {
@@ -30,12 +37,16 @@ const HomePage = () => {
         };
 
         fetchVideos();
-    }, []);
+    }, [selectedCategory]);
 
     const categories = [
-        { id: 'trending', name: 'Trending', icon: <FaFire className="text-orange-500" /> },
-        { id: 'recent', name: 'Waitlist', icon: <FaClock className="text-blue-500" /> },
-        { id: 'recommended', name: 'For You', icon: <FaStar className="text-yellow-500" /> },
+        { id: 'All', name: 'All', icon: <FaStar className="text-yellow-500" /> },
+        { id: 'Music', name: 'Music', icon: <FaFire className="text-red-500" /> },
+        { id: 'Gaming', name: 'Gaming', icon: <FaFire className="text-purple-500" /> },
+        { id: 'Technology', name: 'Tech', icon: <FaClock className="text-blue-500" /> },
+        { id: 'Education', name: 'Education', icon: <FaStar className="text-green-500" /> },
+        { id: 'Vlog', name: 'Vlog', icon: <FaStar className="text-pink-500" /> },
+        { id: 'Entertainment', name: 'Fun', icon: <FaFire className="text-orange-500" /> },
     ];
 
     return (
@@ -64,7 +75,14 @@ const HomePage = () => {
                 {/* Categories Scroll */}
                 <div className="flex gap-4 mb-8 overflow-x-auto pb-2 scrollbar-hide">
                     {categories.map(cat => (
-                        <button key={cat.id} className="flex items-center gap-2 px-6 py-2 bg-[#1E293B] border border-[#334155] rounded-full text-gray-300 hover:text-white hover:border-blue-500 hover:bg-[#334155] transition-all whitespace-nowrap group">
+                        <button
+                            key={cat.id}
+                            onClick={() => setSelectedCategory(cat.id)}
+                            className={`flex items-center gap-2 px-6 py-2 border rounded-full transition-all whitespace-nowrap group ${selectedCategory === cat.id
+                                    ? 'bg-blue-600 border-blue-500 text-white'
+                                    : 'bg-[#1E293B] border-[#334155] text-gray-300 hover:text-white hover:border-blue-500 hover:bg-[#334155]'
+                                }`}
+                        >
                             <span className="group-hover:scale-110 transition-transform">{cat.icon}</span>
                             {cat.name}
                         </button>

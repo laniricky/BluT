@@ -1,11 +1,69 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaTrash, FaUserCircle } from 'react-icons/fa';
+import { FaTrash, FaUserCircle, FaThumbsUp, FaRegThumbsUp, FaThumbsDown, FaRegThumbsDown, FaEdit } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
+import api from '../api/axios';
 
-const CommentItem = ({ comment, onDelete }) => {
-    const { user } = useAuth();
+const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate }) => {
+    const { user, isAuthenticated } = useAuth();
     const canDelete = user && comment.user && user._id === comment.user._id;
+
+    const [isEditing, setIsEditing] = useState(false);
+    const [editContent, setEditContent] = useState(comment.content);
+    const [showReplyInput, setShowReplyInput] = useState(false);
+    const [replyContent, setReplyContent] = useState('');
+
+    // Local state for immediate UI feedback
+    const [likes, setLikes] = useState(comment.likes || []);
+    const [dislikes, setDislikes] = useState(comment.dislikes || []);
+
+    const isLiked = user && likes.includes(user._id);
+    const isDisliked = user && dislikes.includes(user._id);
+
+    const handleVote = async (type) => { // type: 'like' or 'dislike'
+        if (!isAuthenticated) return alert("Please login to vote");
+
+        try {
+            const response = await api.post(`/videos/comments/${comment._id}/${type}`);
+            if (response.data.success) {
+                if (type === 'like') {
+                    setLikes(response.data.data); // New likes array
+                    // If we just liked, remove from dislikes locally
+                    if (!isLiked) setDislikes(dislikes.filter(id => id !== user._id));
+                } else {
+                    setDislikes(response.data.data); // New dislikes array
+                    // If we just disliked, remove from likes locally
+                    if (!isDisliked) setLikes(likes.filter(id => id !== user._id));
+                }
+            }
+        } catch (error) {
+            console.error(`Error ${type} comment:`, error);
+        }
+    };
+
+    const handleUpdate = async () => {
+        if (editContent.trim() === comment.content) return setIsEditing(false);
+
+        try {
+            const response = await api.put(`/videos/comments/${comment._id}`, { content: editContent });
+            if (response.data.success) {
+                onUpdate(response.data.data);
+                setIsEditing(false);
+            }
+        } catch (error) {
+            console.error("Error updating comment:", error);
+            alert("Failed to update comment");
+        }
+    };
+
+    const handleReplySubmit = async (e) => {
+        e.preventDefault();
+        if (!replyContent.trim()) return;
+
+        await onReply(comment._id, replyContent);
+        setReplyContent('');
+        setShowReplyInput(false);
+    };
 
     return (
         <div className="flex gap-4 p-4 hover:bg-[#1E293B]/30 rounded-xl transition-colors group">
@@ -27,25 +85,137 @@ const CommentItem = ({ comment, onDelete }) => {
                     <div className="flex items-center gap-2">
                         <Link
                             to={`/u/${comment.user?.username}`}
-                            className="font-semibold text-white text-sm hover:text-blue-400 transition-colors"
+                            className={`font-semibold text-sm hover:text-blue-400 transition-colors ${comment.user?.username === user?.username ? "bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full" : "text-white"}`}
                         >
                             @{comment.user?.username || 'Unknown'}
                         </Link>
                         <span className="text-xs text-gray-500">
                             {new Date(comment.createdAt).toLocaleDateString()}
                         </span>
+                        {comment.isEdited && (
+                            <span className="text-xs text-gray-600 italic">(edited)</span>
+                        )}
                     </div>
-                    {canDelete && (
+                    {canDelete && !isEditing && (
+                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                className="text-gray-500 hover:text-blue-400 p-1"
+                                title="Edit"
+                            >
+                                <FaEdit size={12} />
+                            </button>
+                            <button
+                                onClick={() => onDelete(comment._id)}
+                                className="text-gray-500 hover:text-red-500 p-1"
+                                title="Delete"
+                            >
+                                <FaTrash size={12} />
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {isEditing ? (
+                    <div className="mt-2">
+                        <textarea
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            className="w-full bg-[#0F172A] border border-[#334155] rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                            rows="2"
+                        />
+                        <div className="flex gap-2 mt-2 justify-end">
+                            <button
+                                onClick={() => setIsEditing(false)}
+                                className="text-xs text-gray-400 hover:text-white px-3 py-1"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleUpdate}
+                                className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-full"
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-gray-300 text-sm mt-1 whitespace-pre-wrap">{comment.content}</p>
+                )}
+
+                <div className="flex items-center gap-4 mt-3">
+                    <button
+                        onClick={() => handleVote('like')}
+                        className={`flex items-center gap-1.5 text-xs ${isLiked ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                        {isLiked ? <FaThumbsUp /> : <FaRegThumbsUp />}
+                        <span>{likes.length || ''}</span>
+                    </button>
+
+                    <button
+                        onClick={() => handleVote('dislike')}
+                        className={`flex items-center gap-1.5 text-xs ${isDisliked ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                        {isDisliked ? <FaThumbsDown /> : <FaRegThumbsDown />}
+                    </button>
+
+                    {isAuthenticated && (
                         <button
-                            onClick={() => onDelete(comment._id)}
-                            className="text-gray-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"
-                            title="Delete comment"
+                            onClick={() => setShowReplyInput(!showReplyInput)}
+                            className="text-gray-500 hover:text-white text-xs font-medium"
                         >
-                            <FaTrash size={12} />
+                            Reply
                         </button>
                     )}
                 </div>
-                <p className="text-gray-300 text-sm mt-1 whitespace-pre-wrap">{comment.content}</p>
+
+                {showReplyInput && (
+                    <form onSubmit={handleReplySubmit} className="mt-3 flex gap-3">
+                        <div className="w-8 h-8 rounded-full bg-[#334155] flex-shrink-0 flex items-center justify-center text-xs text-gray-400">
+                            <FaUserCircle size={20} />
+                        </div>
+                        <div className="flex-1">
+                            <input
+                                type="text"
+                                value={replyContent}
+                                onChange={(e) => setReplyContent(e.target.value)}
+                                placeholder="Add a reply..."
+                                className="w-full bg-transparent border-b border-[#334155] text-white text-sm pb-1 focus:outline-none focus:border-blue-500 transition-colors"
+                                autoFocus
+                            />
+                            <div className="flex justify-end mt-2 gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowReplyInput(false)}
+                                    className="text-xs text-gray-500 hover:text-white"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={!replyContent.trim()}
+                                    className="text-xs bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-1 rounded-full"
+                                >
+                                    Reply
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                )}
+
+                {replies.length > 0 && (
+                    <div className="mt-4 pl-4 border-l-2 border-[#334155] space-y-4">
+                        {replies.map(reply => (
+                            <CommentItem
+                                key={reply._id}
+                                comment={reply}
+                                onDelete={onDelete}
+                                onReply={onReply}
+                                onUpdate={onUpdate}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );
