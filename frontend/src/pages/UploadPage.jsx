@@ -89,6 +89,38 @@ const UploadPage = () => {
         }
     };
 
+    const generateThumbnail = () => {
+        if (!videoFile) return;
+
+        const video = document.createElement('video');
+        video.src = URL.createObjectURL(videoFile);
+        video.crossOrigin = 'anonymous';
+        video.preload = 'metadata';
+
+        video.onloadeddata = () => {
+            // Capture at 5 seconds or middle of video, whichever is smaller
+            video.currentTime = Math.min(video.duration / 2, 5);
+        };
+
+        video.onseeked = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    const file = new File([blob], "thumbnail-generated.jpg", { type: "image/jpeg" });
+                    setThumbnailFile(file);
+                    setThumbnailPreview(URL.createObjectURL(file));
+                    // Cleanup
+                    URL.revokeObjectURL(video.src);
+                }
+            }, 'image/jpeg', 0.85);
+        };
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
@@ -275,7 +307,7 @@ const UploadPage = () => {
                                 </h3>
                                 <p className="text-gray-400 text-sm mb-4">Select or upload a picture that shows what your video is about.</p>
 
-                                <div className="flex gap-4">
+                                <div className="flex gap-4 flex-wrap">
                                     <div
                                         onClick={() => thumbnailInputRef.current.click()}
                                         className="w-40 aspect-video border-2 border-dashed border-gray-600 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 hover:bg-gray-800 transition-all"
@@ -290,6 +322,16 @@ const UploadPage = () => {
                                             onChange={(e) => handleFileChange(e, 'thumbnail')}
                                         />
                                     </div>
+
+                                    {videoFile && (
+                                        <div
+                                            onClick={generateThumbnail}
+                                            className="w-40 aspect-video border-2 border-dashed border-blue-600/50 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-900/20 transition-all group/gen"
+                                        >
+                                            <FaFilm className="text-2xl text-blue-500 group-hover/gen:text-blue-400 mb-2 transition-colors" />
+                                            <span className="text-xs text-blue-400 group-hover/gen:text-blue-300 font-medium text-center px-2 transition-colors leading-tight">Generate from Video</span>
+                                        </div>
+                                    )}
 
                                     {thumbnailPreview && (
                                         <div className="relative w-40 aspect-video rounded-xl overflow-hidden border border-purple-500 ring-2 ring-purple-500/30">
