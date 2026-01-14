@@ -76,7 +76,8 @@ export const getVideos = async (req, res) => {
 
         const videos = await Video.find(query, projection)
             .populate('user', 'username') // Populate user details
-            .sort(sortOptions);
+            .sort(sortOptions)
+            .lean();
 
         res.json({
             success: true,
@@ -415,7 +416,8 @@ export const getRecommendations = async (req, res) => {
         })
             .populate('user', 'username avatar')
             .limit(5)
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
 
         // Get videos with similar view counts (±20%)
         const minViews = currentVideo.views * 0.8;
@@ -451,6 +453,35 @@ export const getRecommendations = async (req, res) => {
             success: false,
             message: 'Server Error'
         });
+    }
+};
+
+// @desc    Log generic interaction
+// @route   POST /api/videos/:id/analytics
+// @access  Public (or Private? Public for views/clicks matches view logic)
+export const logInteraction = async (req, res) => {
+    try {
+        const { type, metadata } = req.body;
+        const videoId = req.params.id;
+
+        // Basic validation
+        if (!['scene_click'].includes(type)) {
+            return res.status(400).json({ success: false, message: 'Invalid interaction type' });
+        }
+
+        await Analytics.create({
+            video: videoId,
+            user: req.user ? req.user.id : undefined,
+            type: type,
+            metadata: metadata || {},
+            date: new Date()
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Log interaction error:', error);
+        // Don't crash for analytics failure, but return error
+        res.status(500).json({ success: false, message: 'Server Error' });
     }
 };
 

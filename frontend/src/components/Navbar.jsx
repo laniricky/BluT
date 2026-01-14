@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaCloudUploadAlt, FaSearch } from 'react-icons/fa';
+import { FaCloudUploadAlt, FaSearch, FaBars, FaTimes, FaHome, FaHistory, FaTv } from 'react-icons/fa';
 import Tooltip from './Tooltip';
 import NotificationBell from './NotificationBell';
 import api from '../api/axios';
@@ -157,28 +158,24 @@ const Navbar = () => {
                         {/* Mobile Hamburger Menu Logic needed here - simplified for snippet */}
                         {/* Mobile Hamburger Button */}
                         <button
-                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            onClick={() => setIsMenuOpen(true)}
                             className="md:hidden text-gray-300 hover:text-white p-2"
                         >
-                            <div className="space-y-1.5">
-                                <span className={`block w-6 h-0.5 bg-current transition-transform ${isMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
-                                <span className={`block w-6 h-0.5 bg-current transition-opacity ${isMenuOpen ? 'opacity-0' : ''}`}></span>
-                                <span className={`block w-6 h-0.5 bg-current transition-transform ${isMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
-                            </div>
+                            <FaBars size={24} />
                         </button>
                     </div>
                 </div>
 
                 {/* Mobile Search Bar (Expandable) */}
                 {isSearchOpen && (
-                    <form onSubmit={handleSearch} className="md:hidden mt-3 pb-2">
+                    <form onSubmit={handleSearch} className="md:hidden mt-3 pb-2 animate-in slide-in-from-top-2 duration-200">
                         <div className="relative w-full">
                             <input
                                 type="text"
                                 placeholder="Search videos..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-[#0F172A] border border-[#334155] text-white pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:border-blue-500"
+                                className="w-full bg-[#0F172A] border border-[#334155] text-white pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50"
                                 autoFocus
                             />
                             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -186,37 +183,96 @@ const Navbar = () => {
                     </form>
                 )}
 
-                {/* Mobile Menu Dropdown */}
-                {isMenuOpen && (
-                    <div className="md:hidden mt-4 pt-4 border-t border-[#334155] flex flex-col gap-4 pb-4 animate-in slide-in-from-top-2 duration-200">
-                        {user ? (
-                            <>
-                                <div className="flex items-center gap-3 px-2 py-2 bg-[#0F172A] rounded-lg">
-                                    <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
-                                        {user.username[0].toUpperCase()}
+                {/* Mobile Menu Overlay & Drawer - Portalled to body to avoid clipping */}
+                {isMenuOpen && createPortal(
+                    <div className="fixed inset-0 z-[100] md:hidden flex justify-end">
+                        {/* Backdrop */}
+                        <div
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+                            onClick={() => setIsMenuOpen(false)}
+                        ></div>
+
+                        {/* Drawer */}
+                        <div className="relative w-[300px] h-full bg-[#0F172A] border-l border-[#1E293B] shadow-2xl p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+                            <div className="flex items-center justify-between mb-8">
+                                <h2 className="text-xl font-bold text-white">Menu</h2>
+                                <button
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="p-2 text-gray-400 hover:text-white bg-[#1E293B] rounded-full transition-colors"
+                                >
+                                    <FaTimes size={20} />
+                                </button>
+                            </div>
+
+                            <div className="flex flex-col gap-6">
+                                {user ? (
+                                    <>
+                                        {/* User Profile Summary */}
+                                        <div className="flex items-center gap-4 p-4 bg-[#1E293B]/50 rounded-2xl border border-[#334155]">
+                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                                                {user.username[0].toUpperCase()}
+                                            </div>
+                                            <div className="overflow-hidden">
+                                                <p className="text-white font-bold truncate">{user.username}</p>
+                                                <p className="text-gray-400 text-xs truncate">{user.email}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Link to="/" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-[#1E293B] px-4 py-3 rounded-xl transition-all">
+                                                <FaHome className="text-blue-500" /> Home
+                                            </Link>
+                                            <Link to="/dashboard" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-[#1E293B] px-4 py-3 rounded-xl transition-all">
+                                                <FaTv className="text-purple-500" /> Dashboard
+                                            </Link>
+                                            <Link to={`/u/${user.username}`} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-[#1E293B] px-4 py-3 rounded-xl transition-all">
+                                                <div className="w-4 h-4 rounded-full border border-current"></div> My Channel
+                                            </Link>
+                                            <Link to="/history" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-[#1E293B] px-4 py-3 rounded-xl transition-all">
+                                                <FaHistory className="text-orange-500" /> Watch History
+                                            </Link>
+                                        </div>
+
+                                        <div className="h-px bg-[#334155] my-2"></div>
+
+                                        <div className="space-y-4">
+                                            <div className="px-4">
+                                                <NotificationBell />
+                                            </div>
+
+                                            <Link to="/upload" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white w-full py-3 rounded-xl font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition-transform">
+                                                <FaCloudUploadAlt size={20} /> Upload Video
+                                            </Link>
+
+                                            <button
+                                                onClick={() => { logout(); setIsMenuOpen(false); }}
+                                                className="w-full py-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl font-medium transition-colors"
+                                            >
+                                                Logout
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="flex flex-col gap-4 mt-4">
+                                        <div className="text-center mb-4">
+                                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-white text-3xl shadow-xl mx-auto mb-4">
+                                                B
+                                            </div>
+                                            <h3 className="text-white font-bold text-xl">Welcome to BluT</h3>
+                                            <p className="text-gray-400 text-sm mt-2">Join the next generation viewing experience.</p>
+                                        </div>
+                                        <Link to="/login" onClick={() => setIsMenuOpen(false)} className="w-full py-3 text-center text-gray-300 hover:text-white bg-[#1E293B] hover:bg-[#334155] rounded-xl font-medium transition-colors">
+                                            Login
+                                        </Link>
+                                        <Link to="/register" onClick={() => setIsMenuOpen(false)} className="w-full py-3 text-center bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-600/20 transition-colors">
+                                            Get Started
+                                        </Link>
                                     </div>
-                                    <div>
-                                        <p className="text-white font-bold">{user.username}</p>
-                                        <p className="text-gray-400 text-xs">{user.email}</p>
-                                    </div>
-                                </div>
-                                <Link to="/dashboard" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-white py-2">Dashboard</Link>
-                                <Link to={`/u/${user.username}`} onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-white py-2">My Channel</Link>
-                                <Link to="/history" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-white py-2">Watch History</Link>
-                                <NotificationBell />
-                                <Tooltip text="Upload Video">
-                                    <Link to="/upload" className="text-white hover:text-blue-400 transition-colors">
-                                        <FaCloudUploadAlt className="text-xl" />
-                                    </Link>
-                                </Tooltip>    <button onClick={logout} className="text-left text-red-400 hover:text-red-300 py-2">Logout</button>
-                            </>
-                        ) : (
-                            <>
-                                <Link to="/login" onClick={() => setIsMenuOpen(false)} className="text-gray-300 hover:text-white py-2">Login</Link>
-                                <Link to="/register" onClick={() => setIsMenuOpen(false)} className="bg-blue-600 text-center text-white py-2 rounded-lg font-bold">Get Started</Link>
-                            </>
-                        )}
-                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>,
+                    document.body
                 )}
             </div>
         </nav>

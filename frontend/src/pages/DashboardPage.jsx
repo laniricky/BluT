@@ -122,6 +122,30 @@ const DashboardPage = () => {
                     </div>
                 )}
 
+                {/* Top Scenes (New in Slice 11) */}
+                {stats?.topScenes && stats.topScenes.length > 0 && (
+                    <div className="bg-[#1E293B] p-6 rounded-xl border border-[#334155] mb-10">
+                        <div className="flex items-center gap-3 mb-6">
+                            <FaChartBar className="text-purple-500" />
+                            <h2 className="text-xl font-bold text-white">Top Performing Chapters</h2>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {stats.topScenes.map((scene, index) => (
+                                <div key={index} className="bg-[#0F172A] p-4 rounded-lg flex items-center justify-between border border-[#334155]">
+                                    <div>
+                                        <p className="font-bold text-white text-lg">#{index + 1} {scene.sceneTitle}</p>
+                                        <p className="text-xs text-gray-400 truncate max-w-[150px]">{scene.videoTitle}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-2xl font-bold text-blue-500">{scene.count}</p>
+                                        <p className="text-xs text-gray-400">Clicks</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Video Performance Table */}
                 <h2 className="text-xl font-bold text-white mb-6">Video Performance</h2>
                 <div className="bg-[#1E293B] rounded-xl border border-[#334155] overflow-hidden">
@@ -180,7 +204,7 @@ const DashboardPage = () => {
                     </div>
                 </div>
             </div>
-        </div >
+        </div>
     );
 };
 

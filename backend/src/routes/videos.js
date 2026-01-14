@@ -1,6 +1,6 @@
 import express from 'express';
 import { getVideos, getVideoById, createVideo, deleteVideo, toggleLike, addView, getRecommendations } from '../controllers/videoController.js';
-import { addComment, getComments, deleteComment, updateComment, toggleCommentLike, toggleCommentDislike } from '../controllers/commentController.js';
+import { addComment, getComments, deleteComment, updateComment, toggleCommentLike, toggleCommentDislike, togglePin, toggleHeart } from '../controllers/commentController.js';
 import { getNotes, addNote, deleteNote } from '../controllers/noteController.js';
 import { getScenes, addScene, deleteScene } from '../controllers/sceneController.js';
 import { protect, optionalProtect } from '../middleware/auth.js';
@@ -25,8 +25,11 @@ router.route('/comments/:id')
     .put(protect, updateComment);
 
 router.post('/comments/:id/like', protect, toggleCommentLike);
-router.post('/comments/:id/like', protect, toggleCommentLike);
-router.post('/comments/:id/dislike', protect, toggleCommentDislike); // /api/videos/comments/:id
+router.post('/comments/:id/dislike', protect, toggleCommentDislike);
+
+// Creator Actions
+router.post('/comments/:id/pin', protect, togglePin);
+router.post('/comments/:id/heart', protect, toggleHeart);
 
 // Note Routes
 router.get('/:id/notes', getNotes);

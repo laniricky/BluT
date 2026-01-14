@@ -14,8 +14,12 @@ const analyticsSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['view', 'like'],
+        enum: ['view', 'like', 'scene_click'],
         required: true
+    },
+    metadata: {
+        type: mongoose.Schema.Types.Mixed, // flexible for storing sceneTitle, sceneId, etc.
+        default: {}
     },
     date: {
         type: Date,

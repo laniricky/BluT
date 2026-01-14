@@ -77,21 +77,57 @@ export const getCreatorStats = async (req, res) => {
         ]);
 
         // Format for frontend (fill in missing dates if needed, but for MVP returning sparse is fine)
+        // Format for frontend
         const chartData = dailyStats.map(stat => ({
             date: stat._id,
             views: stat.views,
             likes: stat.likes
         }));
 
+        // 7. Get Top Scenes (Interaction Analytics)
+        const topScenes = await Analytics.aggregate([
+            {
+                $match: {
+                    type: 'scene_click',
+                    video: { $in: videoIds }
+                }
+            },
+            {
+                $group: {
+                    _id: "$metadata.sceneTitle", // Group by Scene Title
+                    count: { $sum: 1 },
+                    videoId: { $first: "$video" } // Keep track of which video
+                }
+            },
+            { $sort: { count: -1 } },
+            { $limit: 5 },
+            // Optional: Lookup video title if you want to show "intro (Video A)"
+            {
+                $lookup: {
+                    from: "videos",
+                    localField: "videoId",
+                    foreignField: "_id",
+                    as: "videoInfo"
+                }
+            },
+            {
+                $project: {
+                    sceneTitle: "$_id",
+                    count: 1,
+                    videoTitle: { $arrayElemAt: ["$videoInfo.title", 0] }
+                }
+            }
+        ]);
+
         res.json({
             success: true,
             stats: {
                 totalViews,
                 totalLikes,
-                totalLikes,
                 followersCount,
                 videos: videosWithStats,
-                chartData
+                chartData,
+                topScenes
             }
         });
 

@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
     FaPlay, FaPause, FaVolumeUp, FaVolumeMute,
-    FaExpand, FaCompress, FaCog, FaSpinner, FaExternalLinkAlt, FaForward, FaBackward
+    FaExpand, FaCompress, FaCog, FaSpinner, FaExternalLinkAlt, FaForward, FaBackward,
+    FaStepForward, FaStepBackward
 } from 'react-icons/fa';
 import VideoNoteOverlay from './VideoNoteOverlay';
 import PlayerSettingsMenu from './PlayerSettingsMenu';
@@ -179,6 +180,67 @@ const VideoPlayer = React.forwardRef(({
         }
     };
 
+    const handlePrevScene = () => {
+        if (!scenes || scenes.length === 0 || !internalVideoRef.current) return;
+
+        const currentT = internalVideoRef.current.currentTime;
+        // Sort scenes by timestamp
+        const sortedScenes = [...scenes].sort((a, b) => a.timestamp - b.timestamp);
+
+        // Find current active scene index
+        // A scene is active if currentTime >= scene.timestamp
+        // We want to find the LAST scene that meets this criteria
+        let currentIndex = -1;
+        for (let i = 0; i < sortedScenes.length; i++) {
+            if (currentT >= sortedScenes[i].timestamp) {
+                currentIndex = i;
+            } else {
+                break;
+            }
+        }
+
+        if (currentIndex !== -1) {
+            const currentScene = sortedScenes[currentIndex];
+            const timeSinceStart = currentT - currentScene.timestamp;
+
+            // Logic: If we are more than 3 seconds into the scene, jump to START of current scene.
+            // If we are less than 3 seconds in, jump to START of PREVIOUS scene.
+            if (timeSinceStart > 3) {
+                internalVideoRef.current.currentTime = currentScene.timestamp;
+                setCurrentTime(currentScene.timestamp);
+            } else {
+                if (currentIndex > 0) {
+                    const prevScene = sortedScenes[currentIndex - 1];
+                    internalVideoRef.current.currentTime = prevScene.timestamp;
+                    setCurrentTime(prevScene.timestamp);
+                } else {
+                    // At first scene start, just go to 0
+                    internalVideoRef.current.currentTime = 0;
+                    setCurrentTime(0);
+                }
+            }
+        } else {
+            // Before any scenes, go to 0
+            internalVideoRef.current.currentTime = 0;
+            setCurrentTime(0);
+        }
+    };
+
+    const handleNextScene = () => {
+        if (!scenes || scenes.length === 0 || !internalVideoRef.current) return;
+
+        const currentT = internalVideoRef.current.currentTime;
+        const sortedScenes = [...scenes].sort((a, b) => a.timestamp - b.timestamp);
+
+        // Find first scene that is AFTER current time (with small buffer)
+        const nextScene = sortedScenes.find(s => s.timestamp > currentT + 1);
+
+        if (nextScene) {
+            internalVideoRef.current.currentTime = nextScene.timestamp;
+            setCurrentTime(nextScene.timestamp);
+        }
+    };
+
     // Auto-hide controls
     useEffect(() => {
         let timeout;
@@ -293,20 +355,32 @@ const VideoPlayer = React.forwardRef(({
                 </div>
             )}
 
-            {/* Big Play Button Animation */}
+            {/* Big Play Button Animation (Center) */}
             {!isPlaying && !isBuffering && (
                 <div
-                    className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer"
-                    onClick={togglePlay}
+                    className="absolute inset-0 flex items-center justify-center bg-black/10 cursor-pointer z-10"
+                    onClick={(e) => {
+                        e.stopPropagation(); // Prevent toggling controls when clicking play button directly
+                        togglePlay();
+                    }}
                 >
-                    <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white scale-100 hover:scale-110 transition-transform shadow-lg group-hover:bg-blue-600/80">
-                        <FaPlay size={24} className="ml-1" />
+                    <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white scale-100 hover:scale-110 active:scale-95 transition-all shadow-xl group-hover:bg-blue-600/80 border border-white/10">
+                        <FaPlay size={32} className="ml-2" />
                     </div>
                 </div>
             )}
 
+            {/* Tap Overlay to Toggle Controls (Mobile Friendly) */}
+            <div
+                className="absolute inset-0 z-0"
+                onClick={() => setShowControls(!showControls)}
+            ></div>
+
             {/* Controls Bar */}
-            <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-4 pb-4 pt-16 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+            <div
+                className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-4 pb-4 pt-20 transition-opacity duration-300 z-20 ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                onClick={(e) => e.stopPropagation()} // Prevent clicks on controls from toggling visibility
+            >
 
                 {/* Timeline */}
                 <div
@@ -360,64 +434,78 @@ const VideoPlayer = React.forwardRef(({
                 {/* Bottom Controls */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <button onClick={togglePlay} className="text-white hover:text-blue-400 transition-colors focus:outline-none">
-                            {isPlaying ? <FaPause size={18} /> : <FaPlay size={18} />}
-                        </button>
+                        <div className="flex items-center gap-4">
+                            {scenes && scenes.length > 0 && (
+                                <button onClick={handlePrevScene} className="text-white/70 hover:text-white transition-colors focus:outline-none" title="Previous Scene">
+                                    <FaStepBackward size={14} />
+                                </button>
+                            )}
 
-                        <div className="flex items-center gap-2 group/volume">
-                            <button onClick={toggleMute} className="text-white hover:text-blue-400 transition-colors focus:outline-none">
-                                {isMuted || volume === 0 ? <FaVolumeMute size={18} /> : <FaVolumeUp size={18} />}
+                            <button onClick={togglePlay} className="text-white hover:text-blue-400 transition-colors focus:outline-none">
+                                {isPlaying ? <FaPause size={18} /> : <FaPlay size={18} />}
                             </button>
-                            <div className="w-0 overflow-hidden group-hover/volume:w-20 transition-all duration-300">
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="1"
-                                    step="0.05"
-                                    value={isMuted ? 0 : volume}
-                                    onChange={handleVolumeChange}
-                                    className="w-16 h-1 accent-blue-500 cursor-pointer"
+
+                            {scenes && scenes.length > 0 && (
+                                <button onClick={handleNextScene} className="text-white/70 hover:text-white transition-colors focus:outline-none" title="Next Scene">
+                                    <FaStepForward size={14} />
+                                </button>
+                            )}
+
+                            <div className="flex items-center gap-2 group/volume">
+                                <button onClick={toggleMute} className="text-white hover:text-blue-400 transition-colors focus:outline-none">
+                                    {isMuted || volume === 0 ? <FaVolumeMute size={18} /> : <FaVolumeUp size={18} />}
+                                </button>
+                                <div className="w-0 overflow-hidden group-hover/volume:w-20 transition-all duration-300">
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="1"
+                                        step="0.05"
+                                        value={isMuted ? 0 : volume}
+                                        onChange={handleVolumeChange}
+                                        className="w-16 h-1 accent-blue-500 cursor-pointer"
+                                    />
+                                </div>
+                            </div>
+
+                            <span className="text-white text-xs font-medium tracking-wide">
+                                {formatTime(currentTime)} / {formatTime(duration)}
+                            </span>
+                        </div>
+
+                        <div className="flex items-center gap-4 relative">
+                            {/* Settings Button */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowSettings(!showSettings)}
+                                    data-settings-trigger="true"
+                                    className={`text-white hover:text-blue-400 transition-colors focus:outline-none ${showSettings ? 'text-blue-400 rotate-45' : ''} transform transition-transform duration-300`}
+                                >
+                                    <FaCog size={18} />
+                                </button>
+                                {/* Settings Menu Popup */}
+                                <PlayerSettingsMenu
+                                    show={showSettings}
+                                    onClose={() => setShowSettings(false)}
+                                    playbackRate={playbackRate}
+                                    onPlaybackRateChange={handlePlaybackRateChange}
+                                    settingsRef={settingsRef}
                                 />
                             </div>
-                        </div>
 
-                        <span className="text-white text-xs font-medium tracking-wide">
-                            {formatTime(currentTime)} / {formatTime(duration)}
-                        </span>
-                    </div>
-
-                    <div className="flex items-center gap-4 relative">
-                        {/* Settings Button */}
-                        <div className="relative">
+                            {/* PiP Button */}
                             <button
-                                onClick={() => setShowSettings(!showSettings)}
-                                data-settings-trigger="true"
-                                className={`text-white hover:text-blue-400 transition-colors focus:outline-none ${showSettings ? 'text-blue-400 rotate-45' : ''} transform transition-transform duration-300`}
+                                onClick={togglePiP}
+                                className="text-white hover:text-blue-400 transition-colors focus:outline-none hidden sm:block"
+                                title="Picture in Picture"
                             >
-                                <FaCog size={18} />
+                                <FaExternalLinkAlt size={16} />
                             </button>
-                            {/* Settings Menu Popup */}
-                            <PlayerSettingsMenu
-                                show={showSettings}
-                                onClose={() => setShowSettings(false)}
-                                playbackRate={playbackRate}
-                                onPlaybackRateChange={handlePlaybackRateChange}
-                                settingsRef={settingsRef}
-                            />
+
+                            <button onClick={toggleFullscreen} className="text-white hover:text-blue-400 transition-colors focus:outline-none">
+                                {isFullscreen ? <FaCompress size={18} /> : <FaExpand size={18} />}
+                            </button>
                         </div>
-
-                        {/* PiP Button */}
-                        <button
-                            onClick={togglePiP}
-                            className="text-white hover:text-blue-400 transition-colors focus:outline-none hidden sm:block"
-                            title="Picture in Picture"
-                        >
-                            <FaExternalLinkAlt size={16} />
-                        </button>
-
-                        <button onClick={toggleFullscreen} className="text-white hover:text-blue-400 transition-colors focus:outline-none">
-                            {isFullscreen ? <FaCompress size={18} /> : <FaExpand size={18} />}
-                        </button>
                     </div>
                 </div>
             </div>

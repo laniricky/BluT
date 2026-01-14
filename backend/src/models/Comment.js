@@ -38,6 +38,14 @@ const commentSchema = new mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        isPinned: {
+            type: Boolean,
+            default: false,
+        },
+        isHearted: {
+            type: Boolean,
+            default: false,
+        },
     },
     {
         timestamps: true,

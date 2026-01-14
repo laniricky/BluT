@@ -162,13 +162,13 @@ Goal: Actual video streaming
 ✅ Day 121 – Improve player UI
 ✅ Day 122 – Keyboard controls
 ✅ Day 123 – Fullscreen support (Native only)
-⬜ Day 124 – Mobile player fixes
-⬜ Day 125 – Accessibility improvements
+✅ Day 124 – Mobile player fixes
+✅ Day 125 – Accessibility improvements
 
-⬜ Day 126 – Stress testing
-⬜ Day 127 – Fix performance issues
+✅ Day 126 – Stress testing
+✅ Day 127 – Fix performance issues
 ✅ Day 128 – Final streaming polish (Search & Discovery)
-⬜ Day 129 – UX refinement
+✅ Day 129 – UX refinement (Unique Interaction Model)
 ⬜ Day 130 – Feature freeze
 
 PHASE 5: ORIGINAL FEATURES (Day 131–170)
@@ -182,7 +182,7 @@ Goal: Make it NOT YouTube
 ⬜ Day 135 – Scene navigation
 
 ✅ Day 136 – Creator Notes (Pop-up Video style)
-⬜ Day 137 – Viewer reactions (not likes)
+✅ Day 137 – Viewer reactions & Creator Tools (Hearts, Pins)
 ⬜ Day 138 – Reaction analytics
 ⬜ Day 139 – Creator highlights
 ⬜ Day 140 – Experimental feed
@@ -213,7 +213,7 @@ Goal: Make it NOT YouTube
 
 ⬜ Day 161 – UI polish
 ⬜ Day 162 – Performance optimization
-⬜ Day 163 – Mobile fixes
+✅ Day 163 – Mobile fixes
 ⬜ Day 164 – Cross-browser testing
 ⬜ Day 165 – Bug fixes
 

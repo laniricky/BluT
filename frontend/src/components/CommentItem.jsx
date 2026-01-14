@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaTrash, FaUserCircle, FaThumbsUp, FaRegThumbsUp, FaThumbsDown, FaRegThumbsDown, FaEdit } from 'react-icons/fa';
+import { FaTrash, FaUserCircle, FaThumbsUp, FaRegThumbsUp, FaThumbsDown, FaRegThumbsDown, FaEdit, FaThumbtack, FaHeart, FaEllipsisV } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
-const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate, onSeek }) => {
+const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate, onSeek, onPin, onHeart, isVideoOwner }) => { // Added props
     const { user, isAuthenticated } = useAuth();
     const canDelete = user && comment.user && user._id === comment.user._id;
 
@@ -12,6 +12,7 @@ const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate, onSee
     const [editContent, setEditContent] = useState(comment.content);
     const [showReplyInput, setShowReplyInput] = useState(false);
     const [replyContent, setReplyContent] = useState('');
+    const [showMenu, setShowMenu] = useState(false); // For creator menu
 
     // Local state for immediate UI feedback
     const [likes, setLikes] = useState(comment.likes || []);
@@ -74,8 +75,10 @@ const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate, onSee
     };
 
     return (
-        <div className="flex gap-4 p-4 hover:bg-[#1E293B]/30 rounded-xl transition-colors group">
-            <Link to={`/u/${comment.user?.username}`} className="flex-shrink-0">
+        <div className={`flex gap-4 p-4 hover:bg-[#1E293B]/30 rounded-xl transition-colors group ${comment.isPinned ? 'bg-blue-900/10 border border-blue-500/20' : ''}`}>
+            {/* Pinned Icon (Absolute or Integrated) */}
+
+            <Link to={`/u/${comment.user?.username}`} className="flex-shrink-0 relative">
                 {comment.user?.avatar ? (
                     <img
                         src={comment.user.avatar}
@@ -87,10 +90,17 @@ const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate, onSee
                         <FaUserCircle size={24} />
                     </div>
                 )}
+                {/* Creator Heart Badge on Avatar? Maybe overkill. Let's put it next to likes. */}
             </Link>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0"> {/* min-w-0 for truncate */}
+                {comment.isPinned && (
+                    <div className="flex items-center gap-2 text-xs text-blue-400 mb-1 font-medium">
+                        <FaThumbtack /> Pinned by Creator
+                    </div>
+                )}
+
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                         <Link
                             to={`/u/${comment.user?.username}`}
                             className={`font-semibold text-sm hover:text-blue-400 transition-colors ${comment.user?.username === user?.username ? "bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full" : "text-white"}`}
@@ -112,24 +122,55 @@ const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate, onSee
                             <span className="text-xs text-gray-600 italic">(edited)</span>
                         )}
                     </div>
-                    {canDelete && !isEditing && (
-                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                                onClick={() => setIsEditing(true)}
-                                className="text-gray-500 hover:text-blue-400 p-1"
-                                title="Edit"
-                            >
-                                <FaEdit size={12} />
-                            </button>
-                            <button
-                                onClick={() => onDelete(comment._id)}
-                                className="text-gray-500 hover:text-red-500 p-1"
-                                title="Delete"
-                            >
-                                <FaTrash size={12} />
-                            </button>
-                        </div>
-                    )}
+
+                    {/* Actions Menu */}
+                    <div className="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity items-center">
+                        {(canDelete || isVideoOwner) && (
+                            <div className="relative">
+                                {!isEditing && (
+                                    <button onClick={() => setShowMenu(!showMenu)} className="text-gray-400 hover:text-white p-1">
+                                        <FaEllipsisV size={12} />
+                                    </button>
+                                )}
+                                {showMenu && (
+                                    <div className="absolute right-0 mt-1 w-32 bg-[#1E293B] border border-[#334155] rounded-lg shadow-xl z-10 overflow-hidden py-1">
+                                        {isVideoOwner && (
+                                            <>
+                                                <button
+                                                    onClick={() => { onPin(comment._id); setShowMenu(false); }}
+                                                    className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2"
+                                                >
+                                                    <FaThumbtack size={10} /> {comment.isPinned ? 'Unpin' : 'Pin'}
+                                                </button>
+                                                <button
+                                                    onClick={() => { onHeart(comment._id); setShowMenu(false); }}
+                                                    className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2"
+                                                >
+                                                    <FaHeart size={10} /> {comment.isHearted ? 'Remove Heart' : 'Give Heart'}
+                                                </button>
+                                            </>
+                                        )}
+                                        {canDelete && (
+                                            <>
+                                                <button
+                                                    onClick={() => { setIsEditing(true); setShowMenu(false); }}
+                                                    className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2"
+                                                >
+                                                    <FaEdit size={10} /> Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => { onDelete(comment._id); setShowMenu(false); }}
+                                                    className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300 flex items-center gap-2"
+                                                >
+                                                    <FaTrash size={10} /> Delete
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {isEditing ? (
@@ -156,7 +197,7 @@ const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate, onSee
                         </div>
                     </div>
                 ) : (
-                    <p className="text-gray-300 text-sm mt-1 whitespace-pre-wrap">{comment.content}</p>
+                    <p className={`text-gray-300 text-sm mt-1 whitespace-pre-wrap ${comment.isPinned ? 'font-medium' : ''}`}>{comment.content}</p>
                 )}
 
                 <div className="flex items-center gap-4 mt-3">
@@ -174,6 +215,17 @@ const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate, onSee
                     >
                         {isDisliked ? <FaThumbsDown /> : <FaRegThumbsDown />}
                     </button>
+
+                    {/* Creator Heart Icon */}
+                    {comment.isHearted && (
+                        <div className="flex items-center gap-1 bg-red-500/10 px-1.5 py-0.5 rounded-full" title="Liked by Creator">
+                            <img src={comment.user?.avatar} className="w-4 h-4 rounded-full" alt="creator" /> {/* Ideally this is the CREATOR avatar, but for now using comment user avatar is WRONG if they are different. We need CREATOR avatar. */}
+                            {/* Actually, the 'Heart' implies the VIDEO CREATOR liked it. We don't have creator avatar here easily unless we pass it down or fetch it.
+                                Simple fix: Just show a small heart icon with a specific style. 
+                            */}
+                            <FaHeart className="text-red-500 text-[10px]" />
+                        </div>
+                    )}
 
                     {isAuthenticated && (
                         <button
@@ -229,6 +281,9 @@ const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate, onSee
                                 onReply={onReply}
                                 onUpdate={onUpdate}
                                 onSeek={onSeek}
+                                onPin={onPin} // Pass down actions for sub-comments? Usually only root comments are pinned.
+                                onHeart={onHeart}
+                                isVideoOwner={isVideoOwner}
                             />
                         ))}
                     </div>

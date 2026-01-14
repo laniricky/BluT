@@ -244,8 +244,8 @@ const WatchPage = () => {
     return (
         <div className="min-h-screen bg-[#0F172A] pb-10">
             <Navbar />
-            <div className="pt-8 px-4 md:px-8">
-                <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="pt-0 md:pt-8 px-0 md:px-8">
+                <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-y-6 lg:gap-8">
                     {/* Left Column: Video Player & Info */}
                     <div className="lg:col-span-2">
                         {/* Video Player Container */}
@@ -272,8 +272,8 @@ const WatchPage = () => {
                         </div>
 
                         {/* Video Title & Meta */}
-                        <div className="mt-4">
-                            <h1 className="text-2xl font-bold text-white">{video.title}</h1>
+                        <div className="mt-4 px-4 md:px-0">
+                            <h1 className="text-xl md:text-2xl font-bold text-white leading-tight">{video.title}</h1>
 
                             <div className="flex flex-col md:flex-row md:items-center justify-between mt-3 pb-4 border-b border-[#1E293B]">
                                 <div className="flex items-center text-gray-400 text-sm">
@@ -419,6 +419,7 @@ const WatchPage = () => {
                                     videoRef.current.play(); // Auto play after seek
                                 }
                             }}
+                            isVideoOwner={isAuthenticated && video.user && user && (video.user._id === user._id || video.user === user._id)}
                         />
                     </div>
 

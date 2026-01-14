@@ -119,10 +119,17 @@ const SceneList = ({ videoId, currentTime, scenes, onSceneAdded, onSceneDeleted,
                         {scenes.map(scene => (
                             <div
                                 key={scene._id}
-                                onClick={() => onSeek(scene.timestamp)}
+                                onClick={() => {
+                                    onSeek(scene.timestamp);
+                                    // Log Analytics
+                                    api.post(`/videos/${videoId}/analytics`, {
+                                        type: 'scene_click',
+                                        metadata: { sceneId: scene._id, sceneTitle: scene.title }
+                                    }).catch(err => console.error("Failed to log scene click", err));
+                                }}
                                 className={`px-4 py-3 cursor-pointer transition-colors flex items-center justify-between group ${currentSceneId === scene._id
-                                        ? 'bg-blue-900/20 hover:bg-blue-900/30 border-l-4 border-blue-500'
-                                        : 'hover:bg-[#334155]/50 border-l-4 border-transparent'
+                                    ? 'bg-blue-900/20 hover:bg-blue-900/30 border-l-4 border-blue-500'
+                                    : 'hover:bg-[#334155]/50 border-l-4 border-transparent'
                                     }`}
                             >
                                 <div className="flex items-center gap-4">

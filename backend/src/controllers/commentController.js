@@ -54,7 +54,8 @@ export const getComments = async (req, res) => {
     try {
         const comments = await Comment.find({ video: req.params.id })
             .populate('user', 'username avatar')
-            .sort({ createdAt: -1 }); // Newest first
+            .sort({ createdAt: -1 }) // Newest first
+            .lean();
 
         res.json({
             success: true,
@@ -194,3 +195,74 @@ export const deleteComment = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server Error' });
     }
 };
+// @desc    Toggle comment pin
+// @route   POST /api/videos/comments/:id/pin
+// @access  Private
+export const togglePin = async (req, res) => {
+    try {
+        const comment = await Comment.findById(req.params.id)
+            .populate('video'); // Need video to check owner
+
+        if (!comment) {
+            return res.status(404).json({ success: false, message: 'Comment not found' });
+        }
+
+        // Check if user is the VIDEO OWNER
+        if (comment.video.user.toString() !== req.user.id) {
+            return res.status(403).json({ success: false, message: 'Only the video owner can pin comments' });
+        }
+
+        // Unpin any other pinned comment on this video if pinning (optional, but good UX to have max 1 pin)
+        if (!comment.isPinned) {
+            await Comment.updateMany(
+                { video: comment.video._id, isPinned: true },
+                { $set: { isPinned: false } }
+            );
+        }
+
+        comment.isPinned = !comment.isPinned;
+        await comment.save();
+
+        res.json({
+            success: true,
+            data: { isPinned: comment.isPinned }
+        });
+    } catch (error) {
+        console.error('Toggle pin error:', error);
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
+// @desc    Toggle creator heart
+// @route   POST /api/videos/comments/:id/heart
+// @access  Private
+export const toggleHeart = async (req, res) => {
+    try {
+        const comment = await Comment.findById(req.params.id)
+            .populate('video');
+
+        if (!comment) {
+            return res.status(404).json({ success: false, message: 'Comment not found' });
+        }
+
+        // Check if user is the VIDEO OWNER
+        if (comment.video.user.toString() !== req.user.id) {
+            return res.status(403).json({ success: false, message: 'Only the video owner can give a heart' });
+        }
+
+        comment.isHearted = !comment.isHearted;
+        await comment.save();
+
+        // Notification logic could go here (notify comment author that creator hearted their comment)
+
+        res.json({
+            success: true,
+            data: { isHearted: comment.isHearted }
+        });
+    } catch (error) {
+        console.error('Toggle heart error:', error);
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
+

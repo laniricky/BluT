@@ -5,7 +5,7 @@ import CommentItem from './CommentItem';
 import { FaUserCircle } from 'react-icons/fa';
 import { CommentSkeleton } from './LoadingSkeleton';
 
-const CommentSection = ({ videoId, currentTime, onSeek, scenes = [] }) => {
+const CommentSection = ({ videoId, currentTime, onSeek, scenes = [], isVideoOwner }) => { // Accepted isVideoOwner prop
     const { user, isAuthenticated } = useAuth();
     const [comments, setComments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -13,6 +13,45 @@ const CommentSection = ({ videoId, currentTime, onSeek, scenes = [] }) => {
     const [submitLoading, setSubmitLoading] = useState(false);
     const [includeTimestamp, setIncludeTimestamp] = useState(false);
     const [filterMode, setFilterMode] = useState('all'); // 'all' | 'scene'
+
+    const handlePin = async (commentId) => {
+        try {
+            const response = await api.post(`/videos/comments/${commentId}/pin`);
+            if (response.data.success) {
+                // Update local state:
+                // 1. Unpin all others (if strictly one pin allowed, backend logic does this, frontend should reflect)
+                // 2. Toggle pin on target
+                const newPinnedStatus = response.data.data.isPinned;
+
+                setComments(prevComments => prevComments.map(c => {
+                    if (c._id === commentId) {
+                        return { ...c, isPinned: newPinnedStatus };
+                    }
+                    // If new status is true, unpin others (assuming single pin policy)
+                    if (newPinnedStatus && c.isPinned) {
+                        return { ...c, isPinned: false };
+                    }
+                    return c;
+                }));
+            }
+        } catch (error) {
+            console.error('Error toggling pin:', error);
+            alert('Failed to pin comment.');
+        }
+    };
+
+    const handleHeart = async (commentId) => {
+        try {
+            const response = await api.post(`/videos/comments/${commentId}/heart`);
+            if (response.data.success) {
+                setComments(prevComments => prevComments.map(c =>
+                    c._id === commentId ? { ...c, isHearted: response.data.data.isHearted } : c
+                ));
+            }
+        } catch (error) {
+            console.error('Error toggling heart:', error);
+        }
+    };
 
     // Determine current scene
     const currentScene = useMemo(() => {
@@ -79,6 +118,13 @@ const CommentSection = ({ videoId, currentTime, onSeek, scenes = [] }) => {
                 c.timestamp < currentScene.endTime
             );
         }
+
+        // Sort: Pinned first, then Newest
+        filtered.sort((a, b) => {
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        });
 
         return filtered;
     }, [comments, filterMode, currentScene]);
@@ -161,8 +207,8 @@ const CommentSection = ({ videoId, currentTime, onSeek, scenes = [] }) => {
                         <button
                             onClick={() => setFilterMode('all')}
                             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${filterMode === 'all'
-                                    ? 'bg-[#334155] text-white shadow-sm'
-                                    : 'text-gray-400 hover:text-gray-300'
+                                ? 'bg-[#334155] text-white shadow-sm'
+                                : 'text-gray-400 hover:text-gray-300'
                                 }`}
                         >
                             All Comments
@@ -171,8 +217,8 @@ const CommentSection = ({ videoId, currentTime, onSeek, scenes = [] }) => {
                             onClick={() => setFilterMode('scene')}
                             disabled={!currentScene}
                             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-2 ${filterMode === 'scene'
-                                    ? 'bg-blue-600 text-white shadow-sm'
-                                    : 'text-gray-400 hover:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed'
+                                ? 'bg-blue-600 text-white shadow-sm'
+                                : 'text-gray-400 hover:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed'
                                 }`}
                         >
                             Current Scene

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { FaBell } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
@@ -31,16 +32,24 @@ const NotificationBell = () => {
         return () => clearInterval(interval);
     }, [user]);
 
-    // Close dropdown on click outside
+    const portalRef = useRef(null);
+
+    // Close dropdown on click outside (handling both button and portalled dropdown)
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+            if (
+                isOpen &&
+                dropdownRef.current &&
+                !dropdownRef.current.contains(event.target) &&
+                portalRef.current &&
+                !portalRef.current.contains(event.target)
+            ) {
                 setIsOpen(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [isOpen]);
 
     const handleMarkAsRead = async (id, link) => {
         try {
@@ -63,6 +72,27 @@ const NotificationBell = () => {
         }
     };
 
+
+    const [position, setPosition] = useState({ top: 0, right: 0 }); // Use right alignment logic
+
+    // Calculate position when opening
+    useEffect(() => {
+        if (isOpen && dropdownRef.current) {
+            const rect = dropdownRef.current.getBoundingClientRect();
+            // Position: Top is bottom of bell + gap.
+            // Right alignment: We want the dropdown's right edge to align near the bell, but ensure check overflow.
+            // Simplified: Top = input rect.bottom + 8
+            // Right = Window Width - rect.right (margin from right)
+
+            // Actually, let's use fixed positioning based on rect
+            // Default: align right edge of dropdown with right edge of bell icon container
+            const top = rect.bottom + 10;
+            const right = window.innerWidth - rect.right;
+
+            setPosition({ top, right });
+        }
+    }, [isOpen]);
+
     if (!user) return null;
 
     return (
@@ -80,8 +110,22 @@ const NotificationBell = () => {
                 )}
             </button>
 
-            {isOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-[#1E293B] border border-[#334155] rounded-xl shadow-2xl z-50 overflow-hidden">
+            {isOpen && createPortal(
+                <div
+                    ref={portalRef}
+                    className="fixed z-[100] w-80 bg-[#1E293B] border border-[#334155] rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+                    style={{
+                        top: `${position.top}px`,
+                        right: `${Math.max(16, position.right)}px`, // Ensure at least 16px from right edge
+                        // Add a max-height check if needed, but css max-h-96 is fine
+                    }}
+                >
+                    {/* Overlay for clicking outside (transparent) - cleaner than global event listener sometimes, 
+                        but we already have global listener. 
+                        Actually, global listener checks 'dropdownRef' which is the BELL button now. 
+                        The Portal is outside dropdownRef. We need to handle outside clicks for the portal content too.
+                    */}
+
                     <div className="flex items-center justify-between p-3 border-b border-[#334155]">
                         <h3 className="text-white font-semibold text-sm">Notifications</h3>
                         {unreadCount > 0 && (
@@ -94,7 +138,7 @@ const NotificationBell = () => {
                         )}
                     </div>
 
-                    <div className="max-h-96 overflow-y-auto">
+                    <div className="max-h-80 overflow-y-auto custom-scrollbar">
                         {notifications.length === 0 ? (
                             <p className="text-gray-400 text-center py-8 text-sm">No notifications</p>
                         ) : (
@@ -133,7 +177,8 @@ const NotificationBell = () => {
                             ))
                         )}
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
