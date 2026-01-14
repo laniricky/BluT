@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { FaLock, FaLink } from 'react-icons/fa';
 
 const VideoCard = ({ video }) => {
     return (
@@ -13,6 +14,23 @@ const VideoCard = ({ video }) => {
                 <div className='absolute bottom-1 right-1 bg-black/80 px-1 text-xs text-white rounded'>
                     {video.duration || '12:00'}
                 </div>
+                {video.visibility && video.visibility !== 'public' && (
+                    <div className='absolute top-2 left-2 flex items-center gap-1 bg-black/80 px-2 py-1 text-xs text-white rounded'>
+                        {video.visibility === 'private' ? <FaLock /> : <FaLink />}
+                        <span>{video.visibility === 'private' ? 'Private' : 'Unlisted'}</span>
+                    </div>
+                )}
+                {/* Progress Bar for Resume Watching */}
+                {video.progress > 0 && video.durationSec > 0 && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-600">
+                        <div
+                            className="h-full bg-red-600"
+                            style={{
+                                width: `${Math.min((video.progress / video.durationSec) * 100, 100)}%`
+                            }}
+                        ></div>
+                    </div>
+                )}
             </Link>
             <div className='flex gap-2'>
                 <Link to={`/u/${video.user?.username}`} className='flex-shrink-0'>

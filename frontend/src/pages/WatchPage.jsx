@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { FaThumbsUp, FaRegThumbsUp, FaShare, FaEye, FaTrash } from 'react-icons/fa';
+import { FaThumbsUp, FaRegThumbsUp, FaShare, FaEye, FaTrash, FaLock } from 'react-icons/fa';
 
 import Navbar from '../components/Navbar';
 import CommentSection from '../components/CommentSection';
@@ -110,7 +110,11 @@ const WatchPage = () => {
                 }
             } catch (err) {
                 console.error("Error fetching video:", err);
-                setError('Error loading video. Please try again.');
+                if (err.response && err.response.status === 403) {
+                    setError('This video is private. Only the owner can view it.');
+                } else {
+                    setError('Error loading video. Please try again.');
+                }
             } finally {
                 setLoading(false);
             }
@@ -215,8 +219,24 @@ const WatchPage = () => {
 
     if (error || !video) {
         return (
-            <div className="min-h-screen bg-[#0F172A] flex items-center justify-center text-white">
-                <p className="text-xl text-red-400">{error || 'Video not found'}</p>
+            <div className="min-h-screen bg-[#0F172A] flex flex-col items-center justify-center text-white p-4">
+                {error && error.includes('private') ? (
+                    <div className="bg-[#1E293B] p-8 rounded-2xl border border-gray-700 text-center max-w-md">
+                        <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <FaLock className="text-3xl text-gray-400" />
+                        </div>
+                        <h2 className="text-2xl font-bold mb-2">Private Video</h2>
+                        <p className="text-gray-400">{error}</p>
+                        <button
+                            onClick={() => navigate('/')}
+                            className="mt-6 px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-full font-medium transition-colors"
+                        >
+                            Go Home
+                        </button>
+                    </div>
+                ) : (
+                    <p className="text-xl text-red-400">{error || 'Video not found'}</p>
+                )}
             </div>
         );
     }
@@ -334,6 +354,25 @@ const WatchPage = () => {
                                         <p className="text-gray-300 mt-3 whitespace-pre-wrap leading-relaxed">
                                             {video.description}
                                         </p>
+
+                                        {/* Tags */}
+                                        {video.tags && video.tags.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mt-4">
+                                                {video.tags.map((tag, index) => (
+                                                    <a
+                                                        key={index}
+                                                        href={`/search?tag=${encodeURIComponent(tag)}`}
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            navigate(`/search?tag=${encodeURIComponent(tag)}`);
+                                                        }}
+                                                        className="text-blue-400 hover:text-blue-300 text-sm font-medium bg-blue-500/10 px-2 py-0.5 rounded hover:bg-blue-500/20 transition-colors"
+                                                    >
+                                                        #{tag}
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

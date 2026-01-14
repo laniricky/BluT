@@ -150,11 +150,14 @@ const UploadPage = () => {
                             onChange={(e) => setVisibility(e.target.value)}
                             className="w-full bg-[#0F172A] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none"
                         >
-                            <option value="public">Public</option>
-                            <option value="private">Private</option>
+                            <option value="public">Public - Everyone can find and watch</option>
+                            <option value="unlisted">Unlisted - Anyone with the link can watch</option>
+                            <option value="private">Private - Only you can watch</option>
                         </select>
                         <p className="text-gray-500 text-xs mt-1">
-                            Private videos are only visible to you.
+                            {visibility === 'public' && 'Your video will appear in feeds and search results.'}
+                            {visibility === 'unlisted' && 'Your video won\'t appear in feeds, but anyone with the link can view it.'}
+                            {visibility === 'private' && 'Only you can see this video.'}
                         </p>
                     </div>
 

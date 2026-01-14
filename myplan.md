@@ -139,35 +139,35 @@ Goal: Actual video streaming
 ⬜ Day 102 – Thumbnail generation (Manual upload implemented)
 ✅ Day 103 – Video metadata editing (Tags, Categories)
 ✅ Day 104 – Delete video
-⬜ Day 105 – Private vs public videos
+✅ Day 105 – Private vs public videos
 
 ✅ Day 106 – Limit video size (Increased to 2GB)
-⬜ Day 107 – Rate limiting
+✅ Day 107 – Rate limiting
 ✅ Day 108 – Security review
 ✅ Day 109 – Fix upload bugs
 ✅ Day 110 – Streaming stability
 
 ✅ Day 111 – Watch history
-⬜ Day 112 – Resume watching
-⬜ Day 113 – Simple “continue watching”
-⬜ Day 114 – Recently uploaded feed
+✅ Day 112 – Resume watching
+✅ Day 113 – Simple “continue watching”
+✅ Day 114 – Recently uploaded feed
 ✅ Day 115 – Creator dashboard (Basic stats)
 
-⬜ Day 116 – Video analytics (views)
+✅ Day 116 – Video analytics (views)
 ⬜ Day 117 – Likes analytics
 ⬜ Day 118 – Followers analytics
-⬜ Day 119 – Creator stats UI
-⬜ Day 120 – Analytics cleanup
+✅ Day 119 – Creator stats UI
+✅ Day 120 – Analytics cleanup
 
-⬜ Day 121 – Improve player UI
-⬜ Day 122 – Keyboard controls
-⬜ Day 123 – Fullscreen support (Native only)
+✅ Day 121 – Improve player UI
+✅ Day 122 – Keyboard controls
+✅ Day 123 – Fullscreen support (Native only)
 ⬜ Day 124 – Mobile player fixes
 ⬜ Day 125 – Accessibility improvements
 
 ⬜ Day 126 – Stress testing
 ⬜ Day 127 – Fix performance issues
-⬜ Day 128 – Final streaming polish
+✅ Day 128 – Final streaming polish (Search & Discovery)
 ⬜ Day 129 – UX refinement
 ⬜ Day 130 – Feature freeze
 

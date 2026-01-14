@@ -1,4 +1,5 @@
 import express from 'express';
+import { authLimiter } from '../middleware/rateLimiters.js';
 import { body, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
@@ -18,6 +19,7 @@ const generateToken = (userId) => {
 // @access  Public
 router.post(
     '/register',
+    authLimiter,
     [
         body('username')
             .trim()
@@ -92,6 +94,7 @@ router.post(
 // @access  Public
 router.post(
     '/login',
+    authLimiter,
     [
         body('email')
             .isEmail()

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FaCloudUploadAlt, FaSearch } from 'react-icons/fa';
 import Tooltip from './Tooltip';
 import NotificationBell from './NotificationBell';
+import api from '../api/axios';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
@@ -11,6 +12,27 @@ const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [searchSuggestions, setSearchSuggestions] = useState([]);
+
+    // Debounce Search Effect
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            if (searchQuery.trim().length > 1) { // Only search if > 1 char
+                try {
+                    const response = await api.get(`/videos?search=${encodeURIComponent(searchQuery)}&limit=5`);
+                    if (response.data.success) {
+                        setSearchSuggestions(response.data.data.slice(0, 5));
+                    }
+                } catch (err) {
+                    console.error("Instant search error:", err);
+                }
+            } else {
+                setSearchSuggestions([]);
+            }
+        }, 300); // 300ms debounce
+
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -35,18 +57,49 @@ const Navbar = () => {
                     </Link>
 
                     {/* Desktop Search Bar */}
-                    <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
-                        <div className="relative w-full">
-                            <input
-                                type="text"
-                                placeholder="Search videos..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-[#0F172A] border border-[#334155] text-white pl-10 pr-4 py-2 rounded-full focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder-gray-500"
-                            />
-                            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                        </div>
-                    </form>
+                    <div className="hidden md:flex flex-1 max-w-md mx-8 relative group">
+                        <form onSubmit={handleSearch} className="w-full relative z-10">
+                            <div className="relative w-full">
+                                <input
+                                    type="text"
+                                    placeholder="Search videos..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full bg-[#0F172A] border border-[#334155] text-white pl-10 pr-4 py-2 rounded-full focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder-gray-500"
+                                />
+                                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            </div>
+                        </form>
+
+                        {/* Instant Search Dropdown */}
+                        {searchSuggestions.length > 0 && searchQuery && (
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-[#1E293B] border border-[#334155] rounded-xl shadow-2xl overflow-hidden z-20 animate-in fade-in slide-in-from-top-2 duration-200">
+                                {searchSuggestions.map(video => (
+                                    <Link
+                                        key={video._id}
+                                        to={`/watch/${video._id}`}
+                                        className="flex items-center gap-3 p-3 hover:bg-[#334155] transition-colors group/item"
+                                        onClick={() => {
+                                            setSearchQuery('');
+                                            setSearchSuggestions([]);
+                                        }}
+                                    >
+                                        <img src={video.thumbnailUrl} alt="" className="w-12 h-8 object-cover rounded bg-gray-700" />
+                                        <div className="flex-1 overflow-hidden">
+                                            <h4 className="text-white text-sm font-medium truncate group-hover/item:text-blue-400 transition-colors">{video.title}</h4>
+                                            <p className="text-gray-400 text-xs truncate">{video.user?.username}</p>
+                                        </div>
+                                    </Link>
+                                ))}
+                                <button
+                                    onClick={(e) => handleSearch(e)}
+                                    className="w-full text-center py-2 text-xs text-blue-400 hover:text-blue-300 bg-[#0F172A]/50 border-t border-[#334155]"
+                                >
+                                    View all results for "{searchQuery}"
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Right Side: Auth & Mobile Toggles */}
                     <div className="flex items-center gap-3">

@@ -50,7 +50,7 @@ const videoSchema = new mongoose.Schema(
         },
         visibility: {
             type: String,
-            enum: ['public', 'private'],
+            enum: ['public', 'private', 'unlisted'],
             default: 'public',
             index: true
         },

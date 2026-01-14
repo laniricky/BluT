@@ -5,11 +5,12 @@ import { getNotes, addNote, deleteNote } from '../controllers/noteController.js'
 import { getScenes, addScene, deleteScene } from '../controllers/sceneController.js';
 import { protect, optionalProtect } from '../middleware/auth.js';
 import { uploadVideo } from '../middleware/upload.js';
+import { uploadLimiter, generalLimiter } from '../middleware/rateLimiters.js';
 
 const router = express.Router();
 
-router.get('/', getVideos);
-router.post('/', protect, uploadVideo, createVideo);
+router.get('/', generalLimiter, getVideos);
+router.post('/', protect, uploadLimiter, uploadVideo, createVideo);
 router.get('/:id', optionalProtect, getVideoById);
 router.delete('/:id', protect, deleteVideo);
 router.post('/:id/like', protect, toggleLike);

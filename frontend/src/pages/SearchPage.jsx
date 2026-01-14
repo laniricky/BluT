@@ -8,6 +8,7 @@ import { FaSortAmountDown } from 'react-icons/fa';
 const SearchPage = () => {
     const [searchParams] = useSearchParams();
     const query = searchParams.get('q');
+    const tag = searchParams.get('tag'); // Get tag from URL
     const [videos, setVideos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -16,11 +17,13 @@ const SearchPage = () => {
 
     useEffect(() => {
         const fetchSearchResults = async () => {
-            if (!query) return;
+            if (!query && !tag) return; // Allow if either exists
 
             setLoading(true);
             try {
-                let url = `/videos?search=${encodeURIComponent(query)}&sortBy=${sortBy}`;
+                let url = `/videos?sortBy=${sortBy}`;
+                if (query) url += `&search=${encodeURIComponent(query)}`;
+                if (tag) url += `&tag=${encodeURIComponent(tag)}`;
                 if (uploadDate) url += `&uploadDate=${uploadDate}`;
 
                 const response = await api.get(url);
@@ -38,7 +41,7 @@ const SearchPage = () => {
         };
 
         fetchSearchResults();
-    }, [query, sortBy, uploadDate]);
+    }, [query, tag, sortBy, uploadDate]);
 
     return (
         <div className="min-h-screen bg-[#0F172A]">
@@ -46,7 +49,11 @@ const SearchPage = () => {
             <main className="max-w-7xl mx-auto px-4 py-8">
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                     <h1 className="text-2xl font-bold text-white">
-                        Search results for <span className="text-blue-400">"{query}"</span>
+                        {tag ? (
+                            <>Results for tag <span className="text-blue-400">#{tag}</span></>
+                        ) : (
+                            <>Search results for <span className="text-blue-400">"{query}"</span></>
+                        )}
                     </h1>
 
                     {/* Filter Controls */}

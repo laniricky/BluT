@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import VideoGrid from '../components/VideoGrid';
+import VideoRow from '../components/VideoRow';
 import Navbar from '../components/Navbar';
 import { FaFire, FaClock, FaStar } from 'react-icons/fa';
 
@@ -13,31 +14,69 @@ const HomePage = () => {
     const [error, setError] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState('All');
 
+    const [continueWatching, setContinueWatching] = useState([]);
+    const [recentVideos, setRecentVideos] = useState([]);
+
     useEffect(() => {
-        const fetchVideos = async () => {
+        const fetchContent = async () => {
             setLoading(true);
             try {
+                // Fetch Main Grid Videos (Filtered by Category)
                 const params = {};
                 if (selectedCategory !== 'All') {
                     params.category = selectedCategory;
                 }
-                const response = await api.get('/videos', { params });
+                const videosRes = await api.get('/videos', { params });
 
-                if (response.data.success) {
-                    setVideos(response.data.data);
-                } else {
-                    setError('Failed to fetch videos');
+                if (videosRes.data.success) {
+                    setVideos(videosRes.data.data);
                 }
+
+                // Fetch Feeds (Only on mount or if needed, mainly on mount)
+                // We could separate this effect if we don't want to re-fetch feeds 
+                // when changing category, but for simplicity we can keep it or separate it.
+                // Let's separate standard feed fetching to only run once.
             } catch (err) {
                 console.error("Error loading videos:", err);
-                setError('Unable to load content. Please try again later.');
+                setError('Unable to load content.');
             } finally {
                 setLoading(false);
             }
         };
-
-        fetchVideos();
+        fetchContent();
     }, [selectedCategory]);
+
+    // Separate effect for Feeds (Recent & Continue Watching) - runs once
+    useEffect(() => {
+        const fetchFeeds = async () => {
+            try {
+                // Fetch Recent Videos
+                const recentRes = await api.get('/videos?sortBy=createdAt&limit=10');
+                if (recentRes.data.success) {
+                    setRecentVideos(recentRes.data.data);
+                }
+
+                // Fetch Continue Watching (if logged in)
+                if (user) {
+                    const historyRes = await api.get('/users/history');
+                    if (historyRes.data.success) {
+                        // Filter unfinished videos (progress > 10s and < 95%)
+                        const unfinished = historyRes.data.history.filter(item => {
+                            if (!item.video) return false;
+                            const progress = item.progress || 0;
+                            const duration = item.video.durationSec || 0;
+                            const percentage = duration > 0 ? (progress / duration) : 0;
+                            return progress > 10 && percentage < 0.95;
+                        });
+                        setContinueWatching(unfinished);
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching feeds:", err);
+            }
+        };
+        fetchFeeds();
+    }, [user]);
 
     const categories = [
         { id: 'All', name: 'All', icon: <FaStar className="text-yellow-500" /> },
@@ -56,20 +95,19 @@ const HomePage = () => {
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 py-8">
 
-                {/* Continue Watching Section */}
-                {user && (
-                    <div className="mb-10">
-                        <h2 className="text-xl font-bold text-white mb-4">Continue Watching</h2>
-                        <ContinueWatchingRow />
-                    </div>
-                )}
+                {/* Feeds Section (Only show on 'All' category) */}
+                {selectedCategory === 'All' && (
+                    <>
+                        {/* Continue Watching Section */}
+                        {user && continueWatching.length > 0 && (
+                            <VideoRow title="Continue Watching" videos={continueWatching} />
+                        )}
 
-                {/* Hero / Welcome (Only if user is new or empty state) */}
-                {!videos.length && !loading && (
-                    <div className="text-center py-20">
-                        <h2 className="text-3xl font-bold text-white mb-2">Welcome to BluT</h2>
-                        <p className="text-gray-400">No videos found. Be the first to upload!</p>
-                    </div>
+                        {/* recently Uploaded Section */}
+                        {recentVideos.length > 0 && (
+                            <VideoRow title="Recently Uploaded" videos={recentVideos} />
+                        )}
+                    </>
                 )}
 
                 {/* Categories Scroll */}
@@ -89,68 +127,20 @@ const HomePage = () => {
                     ))}
                 </div>
 
-                {/* Video Grid */}
+                {/* Main Video Grid */}
+                <h2 className="text-xl font-bold text-white mb-4 px-2">
+                    {selectedCategory === 'All' ? 'Recommended for You' : `${selectedCategory} Videos`}
+                </h2>
+
+                {!videos.length && !loading && (
+                    <div className="text-center py-20">
+                        <h2 className="text-3xl font-bold text-white mb-2">Welcome to BluT</h2>
+                        <p className="text-gray-400">No videos found. Be the first to upload!</p>
+                    </div>
+                )}
+
                 <VideoGrid videos={videos} isLoading={loading} error={error} />
             </main>
-        </div>
-    );
-
-};
-
-const ContinueWatchingRow = () => {
-    const [videos, setVideos] = useState([]);
-
-    useEffect(() => {
-        const fetchHistory = async () => {
-            try {
-                const response = await api.get('/users/history');
-                if (response.data.success) {
-                    // Filter videos with progress > 0 and < 95% completion
-                    // Since we don't know duration here without populating it or storing it,
-                    // we'll rely on our assumption that if progress > 10 it's "started".
-                    // Real implementation would compare with video duration.
-                    const unfinished = response.data.history
-                        .filter(item => item.progress > 10 && item.video)
-                        .slice(0, 4);
-                    setVideos(unfinished);
-                }
-            } catch (err) {
-                console.error("Failed to fetch continue watching:", err);
-            }
-        };
-        fetchHistory();
-    }, []);
-
-    if (videos.length === 0) return null;
-
-    return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {videos.map(item => (
-                <Link to={`/watch/${item.video._id}`} key={item._id} className="group relative block bg-[#1E293B] rounded-xl overflow-hidden hover:scale-105 transition-transform duration-300">
-                    <div className="aspect-video relative">
-                        <img
-                            src={item.video.thumbnailUrl}
-                            alt={item.video.title}
-                            className="w-full h-full object-cover"
-                        />
-                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-700">
-                            {/* Mock progress bar since we don't have total duration easily available here without fetching it.
-                                 If we stored 'duration' (seconds) on Video model, we could calculate percentage.
-                                 For now, just showing a partial bar to indicate 'in progress'.
-                             */}
-                            <div className="h-full bg-red-600" style={{ width: `${Math.min(100, (item.progress / (item.video.durationSec || 1)) * 100)}%` }}></div>
-                        </div>
-                        <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <FaClock className="text-white text-3xl drop-shadow-lg" />
-                        </div>
-                    </div>
-                    <div className="p-3">
-                        <h3 className="font-bold text-white text-sm truncate">{item.video.title}</h3>
-                        <p className="text-gray-400 text-xs mt-1">{item.video.user?.username}</p>
-                    </div>
-                </Link>
-            ))}
         </div>
     );
 };
