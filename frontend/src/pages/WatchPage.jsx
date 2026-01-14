@@ -332,7 +332,7 @@ const WatchPage = () => {
                                             </span>
                                         </div>
                                         <div className="mt-2">
-                                            {video.user && (
+                                            {video.user && (!user || (user && String(video.user._id) !== String(user._id))) && (
                                                 <FollowButton
                                                     channelId={video.user._id}
                                                     initialIsFollowing={video.user.isFollowing}

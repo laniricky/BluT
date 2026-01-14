@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
@@ -12,8 +12,22 @@ const Navbar = () => {
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false); // Profile Dropdown
+    const profileRef = useRef(null);
+
     const [searchQuery, setSearchQuery] = useState('');
     const [searchSuggestions, setSearchSuggestions] = useState([]);
+
+    // Close profile dropdown on click outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (profileRef.current && !profileRef.current.contains(event.target)) {
+                setIsProfileOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // Debounce Search Effect
     useEffect(() => {
@@ -116,34 +130,71 @@ const Navbar = () => {
                         <div className="hidden md:flex items-center gap-4">
                             {user ? (
                                 <>
-                                    <Link to={`/u/${user.username}`} className="flex flex-col items-end hover:text-blue-400 transition-colors cursor-pointer">
-                                        <span className="text-sm font-medium text-white">{user.username}</span>
-                                    </Link>
-                                    {/* New Links */}
-                                    <Tooltip text="Creator Dashboard" position="bottom">
-                                        <Link to="/dashboard" className="text-gray-300 hover:text-white transition-colors p-1" aria-label="Dashboard">
-                                            <span className="text-sm font-medium">Dashboard</span>
-                                        </Link>
-                                    </Tooltip>
-
-                                    <Tooltip text="Watch History" position="bottom">
-                                        <Link to="/history" className="text-gray-300 hover:text-white transition-colors p-1" aria-label="History">
-                                            <span className="text-sm font-medium">History</span>
-                                        </Link>
-                                    </Tooltip>
-                                    {/* End New Links */}
-
                                     <Tooltip text="Upload a new video" position="bottom">
                                         <Link to="/upload" className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:scale-105 transition-transform text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-blue-500/20">
                                             <FaCloudUploadAlt /> <span className="hidden sm:inline">Upload</span>
                                         </Link>
                                     </Tooltip>
-                                    <button
-                                        onClick={logout}
-                                        className="text-sm bg-[#334155] hover:bg-[#475569] text-white px-4 py-2 rounded-lg transition-colors border border-gray-600"
-                                    >
-                                        Logout
-                                    </button>
+
+                                    <NotificationBell />
+
+                                    {/* Profile Dropdown */}
+                                    <div className="relative" ref={profileRef}>
+                                        <button
+                                            onClick={() => setIsProfileOpen(!isProfileOpen)}
+                                            className="flex items-center gap-2 hover:bg-[#334155]/50 p-1.5 rounded-xl transition-all border border-transparent hover:border-[#334155]"
+                                        >
+                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                                                {user.username[0].toUpperCase()}
+                                            </div>
+                                            <span className="text-sm font-medium text-white hidden lg:block">{user.username}</span>
+                                        </button>
+
+                                        {/* Dropdown Menu */}
+                                        {isProfileOpen && (
+                                            <div className="absolute right-0 mt-2 w-56 bg-[#1E293B] border border-[#334155] rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                                <div className="px-4 py-3 border-b border-[#334155] bg-[#0F172A]/50">
+                                                    <p className="text-xs text-gray-400">Signed in as</p>
+                                                    <p className="text-sm font-bold text-white truncate">{user.username}</p>
+                                                </div>
+
+                                                <div className="p-1">
+                                                    <Link
+                                                        to="/dashboard"
+                                                        onClick={() => setIsProfileOpen(false)}
+                                                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-[#334155] rounded-lg transition-colors"
+                                                    >
+                                                        <FaTv className="text-purple-500" /> Dashboard
+                                                    </Link>
+
+                                                    <Link
+                                                        to={`/u/${user.username}`}
+                                                        onClick={() => setIsProfileOpen(false)}
+                                                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-[#334155] rounded-lg transition-colors"
+                                                    >
+                                                        <div className="w-4 h-4 rounded-full border border-current"></div> My Channel
+                                                    </Link>
+
+                                                    <Link
+                                                        to="/history"
+                                                        onClick={() => setIsProfileOpen(false)}
+                                                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-[#334155] rounded-lg transition-colors"
+                                                    >
+                                                        <FaHistory className="text-orange-500" /> History
+                                                    </Link>
+                                                </div>
+
+                                                <div className="border-t border-[#334155] p-1">
+                                                    <button
+                                                        onClick={() => { logout(); setIsProfileOpen(false); }}
+                                                        className="flex items-center w-full gap-3 px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                    >
+                                                        Logout
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </>
                             ) : (
                                 <>
@@ -275,7 +326,7 @@ const Navbar = () => {
                     document.body
                 )}
             </div>
-        </nav>
+        </nav >
     );
 };
 

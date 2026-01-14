@@ -434,78 +434,76 @@ const VideoPlayer = React.forwardRef(({
                 {/* Bottom Controls */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-4">
-                            {scenes && scenes.length > 0 && (
-                                <button onClick={handlePrevScene} className="text-white/70 hover:text-white transition-colors focus:outline-none" title="Previous Scene">
-                                    <FaStepBackward size={14} />
-                                </button>
-                            )}
-
-                            <button onClick={togglePlay} className="text-white hover:text-blue-400 transition-colors focus:outline-none">
-                                {isPlaying ? <FaPause size={18} /> : <FaPlay size={18} />}
+                        {scenes && scenes.length > 0 && (
+                            <button onClick={handlePrevScene} className="text-white/70 hover:text-white transition-colors focus:outline-none" title="Previous Scene">
+                                <FaStepBackward size={14} />
                             </button>
+                        )}
 
-                            {scenes && scenes.length > 0 && (
-                                <button onClick={handleNextScene} className="text-white/70 hover:text-white transition-colors focus:outline-none" title="Next Scene">
-                                    <FaStepForward size={14} />
-                                </button>
-                            )}
+                        <button onClick={togglePlay} className="text-white hover:text-blue-400 transition-colors focus:outline-none">
+                            {isPlaying ? <FaPause size={18} /> : <FaPlay size={18} />}
+                        </button>
 
-                            <div className="flex items-center gap-2 group/volume">
-                                <button onClick={toggleMute} className="text-white hover:text-blue-400 transition-colors focus:outline-none">
-                                    {isMuted || volume === 0 ? <FaVolumeMute size={18} /> : <FaVolumeUp size={18} />}
-                                </button>
-                                <div className="w-0 overflow-hidden group-hover/volume:w-20 transition-all duration-300">
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="1"
-                                        step="0.05"
-                                        value={isMuted ? 0 : volume}
-                                        onChange={handleVolumeChange}
-                                        className="w-16 h-1 accent-blue-500 cursor-pointer"
-                                    />
-                                </div>
-                            </div>
+                        {scenes && scenes.length > 0 && (
+                            <button onClick={handleNextScene} className="text-white/70 hover:text-white transition-colors focus:outline-none" title="Next Scene">
+                                <FaStepForward size={14} />
+                            </button>
+                        )}
 
-                            <span className="text-white text-xs font-medium tracking-wide">
-                                {formatTime(currentTime)} / {formatTime(duration)}
-                            </span>
-                        </div>
-
-                        <div className="flex items-center gap-4 relative">
-                            {/* Settings Button */}
-                            <div className="relative">
-                                <button
-                                    onClick={() => setShowSettings(!showSettings)}
-                                    data-settings-trigger="true"
-                                    className={`text-white hover:text-blue-400 transition-colors focus:outline-none ${showSettings ? 'text-blue-400 rotate-45' : ''} transform transition-transform duration-300`}
-                                >
-                                    <FaCog size={18} />
-                                </button>
-                                {/* Settings Menu Popup */}
-                                <PlayerSettingsMenu
-                                    show={showSettings}
-                                    onClose={() => setShowSettings(false)}
-                                    playbackRate={playbackRate}
-                                    onPlaybackRateChange={handlePlaybackRateChange}
-                                    settingsRef={settingsRef}
+                        <div className="flex items-center gap-2 group/volume">
+                            <button onClick={toggleMute} className="text-white hover:text-blue-400 transition-colors focus:outline-none">
+                                {isMuted || volume === 0 ? <FaVolumeMute size={18} /> : <FaVolumeUp size={18} />}
+                            </button>
+                            <div className="w-0 overflow-hidden group-hover/volume:w-20 transition-all duration-300">
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="1"
+                                    step="0.05"
+                                    value={isMuted ? 0 : volume}
+                                    onChange={handleVolumeChange}
+                                    className="w-16 h-1 accent-blue-500 cursor-pointer"
                                 />
                             </div>
-
-                            {/* PiP Button */}
-                            <button
-                                onClick={togglePiP}
-                                className="text-white hover:text-blue-400 transition-colors focus:outline-none hidden sm:block"
-                                title="Picture in Picture"
-                            >
-                                <FaExternalLinkAlt size={16} />
-                            </button>
-
-                            <button onClick={toggleFullscreen} className="text-white hover:text-blue-400 transition-colors focus:outline-none">
-                                {isFullscreen ? <FaCompress size={18} /> : <FaExpand size={18} />}
-                            </button>
                         </div>
+
+                        <span className="text-white text-xs font-medium tracking-wide">
+                            {formatTime(currentTime)} / {formatTime(duration)}
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-4 relative">
+                        {/* Settings Button */}
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowSettings(!showSettings)}
+                                data-settings-trigger="true"
+                                className={`text-white hover:text-blue-400 transition-colors focus:outline-none ${showSettings ? 'text-blue-400 rotate-45' : ''} transform transition-transform duration-300`}
+                            >
+                                <FaCog size={18} />
+                            </button>
+                            {/* Settings Menu Popup */}
+                            <PlayerSettingsMenu
+                                show={showSettings}
+                                onClose={() => setShowSettings(false)}
+                                playbackRate={playbackRate}
+                                onPlaybackRateChange={handlePlaybackRateChange}
+                                settingsRef={settingsRef}
+                            />
+                        </div>
+
+                        {/* PiP Button */}
+                        <button
+                            onClick={togglePiP}
+                            className="text-white hover:text-blue-400 transition-colors focus:outline-none hidden sm:block"
+                            title="Picture in Picture"
+                        >
+                            <FaExternalLinkAlt size={16} />
+                        </button>
+
+                        <button onClick={toggleFullscreen} className="text-white hover:text-blue-400 transition-colors focus:outline-none">
+                            {isFullscreen ? <FaCompress size={18} /> : <FaExpand size={18} />}
+                        </button>
                     </div>
                 </div>
             </div>

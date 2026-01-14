@@ -80,7 +80,7 @@ const ProfilePage = () => {
         </div>
     );
 
-    const isOwnProfile = currentUser && currentUser._id === profile._id;
+    const isOwnProfile = currentUser && profile && String(currentUser._id) === String(profile._id);
 
     return (
         <div className="min-h-screen bg-[#0F172A] pb-10">
