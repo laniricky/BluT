@@ -28,6 +28,10 @@ const videoSchema = new mongoose.Schema(
             type: String, // e.g., "10:30"
             required: true,
         },
+        durationSec: {
+            type: Number,
+            default: 0,
+        },
         user: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
@@ -42,6 +46,12 @@ const videoSchema = new mongoose.Schema(
             type: String,
             default: 'Other',
             enum: ['Music', 'Gaming', 'Technology', 'Education', 'Vlog', 'Entertainment', 'Other'],
+            index: true
+        },
+        visibility: {
+            type: String,
+            enum: ['public', 'private'],
+            default: 'public',
             index: true
         },
     },

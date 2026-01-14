@@ -2,6 +2,7 @@ import Video from '../models/Video.js';
 
 import Like from '../models/Like.js';
 import Follow from '../models/Follow.js';
+import Analytics from '../models/Analytics.js';
 
 // @route   GET /api/dashboard/stats
 // @desc    Get creator dashboard statistics
@@ -10,8 +11,8 @@ export const getCreatorStats = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        // 1. Total Subscribers
-        const subscribersCount = await Follow.countDocuments({ following: userId });
+        // 1. Total Followers
+        const followersCount = await Follow.countDocuments({ following: userId });
 
         // 2. Get all videos by user to calculate views and likes
         const videos = await Video.find({ user: userId }).sort({ createdAt: -1 });
@@ -37,13 +38,60 @@ export const getCreatorStats = async (req, res) => {
             };
         }));
 
+        // 6. Get Daily Stats for Charts (Last 30 days)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const dailyStats = await Analytics.aggregate([
+            {
+                $match: {
+                    date: { $gte: thirtyDaysAgo },
+                    video: { $in: videoIds }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        date: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+                        type: "$type"
+                    },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $group: {
+                    _id: "$_id.date",
+                    views: {
+                        $sum: {
+                            $cond: [{ $eq: ["$_id.type", "view"] }, "$count", 0]
+                        }
+                    },
+                    likes: {
+                        $sum: {
+                            $cond: [{ $eq: ["$_id.type", "like"] }, "$count", 0]
+                        }
+                    }
+                }
+            },
+            { $sort: { _id: 1 } }
+        ]);
+
+        // Format for frontend (fill in missing dates if needed, but for MVP returning sparse is fine)
+        const chartData = dailyStats.map(stat => ({
+            date: stat._id,
+            views: stat.views,
+            likes: stat.likes
+        }));
+
         res.json({
             success: true,
             stats: {
                 totalViews,
                 totalLikes,
-                subscribersCount,
-                videos: videosWithStats
+                totalLikes,
+                followersCount,
+                videos: videosWithStats,
+                chartData
             }
         });
 

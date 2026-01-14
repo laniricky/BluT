@@ -7,6 +7,10 @@ const commentSchema = new mongoose.Schema(
             required: [true, 'Content is required'],
             trim: true,
         },
+        timestamp: {
+            type: Number, // Video time in seconds
+            default: null,
+        },
         user: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',

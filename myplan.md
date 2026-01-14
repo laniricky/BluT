@@ -176,12 +176,12 @@ PHASE 5: ORIGINAL FEATURES (Day 131–170)
 Goal: Make it NOT YouTube
 
 ⬜ Day 131 – Define unique interaction model
-⬜ Day 132 – Time-based comments (per scene)
-⬜ Day 133 – Implement scene markers
-⬜ Day 134 – Scene comment UI
+✅ Day 132 – Time-based comments (per scene)
+✅ Day 133 – Implement scene markers
+✅ Day 134 – Scene comment UI
 ⬜ Day 135 – Scene navigation
 
-⬜ Day 136 – Creator notes inside videos
+✅ Day 136 – Creator Notes (Pop-up Video style)
 ⬜ Day 137 – Viewer reactions (not likes)
 ⬜ Day 138 – Reaction analytics
 ⬜ Day 139 – Creator highlights

@@ -141,6 +141,7 @@ const ProfilePage = () => {
                             <FollowButton
                                 channelId={profile._id}
                                 initialIsFollowing={profile.isFollowing}
+                                initialIsFollower={profile.isFollower}
                                 onToggle={handleSubscribeToggle}
                                 large
                             />

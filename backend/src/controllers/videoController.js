@@ -2,6 +2,7 @@ import Video from '../models/Video.js';
 import Like from '../models/Like.js';
 import Follow from '../models/Follow.js';
 import Notification from '../models/Notification.js';
+import Analytics from '../models/Analytics.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -10,7 +11,7 @@ import path from 'path';
 // @access  Public
 export const getVideos = async (req, res) => {
     try {
-        let query = {};
+        let query = { visibility: 'public' }; // Default to public only
         if (req.query.search) {
             query = { $text: { $search: req.query.search } };
         }
@@ -115,6 +116,17 @@ export const getVideoById = async (req, res) => {
         // Check if current user is following
         let isLiked = false;
         let isFollowing = false;
+        let isFollower = false;
+
+        // Access Control for Private Videos
+        if (video.visibility === 'private') {
+            if (!req.user || (req.user._id.toString() !== video.user._id.toString() && req.user.role !== 'admin')) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'This video is private'
+                });
+            }
+        }
 
         if (req.user) {
             isLiked = await Like.exists({
@@ -125,6 +137,11 @@ export const getVideoById = async (req, res) => {
             isFollowing = await Follow.exists({
                 follower: req.user._id,
                 following: video.user._id
+            });
+
+            isFollower = await Follow.exists({
+                follower: video.user._id,
+                following: req.user._id
             });
         }
 
@@ -137,7 +154,8 @@ export const getVideoById = async (req, res) => {
                 user: {
                     ...video.user.toObject(),
                     followersCount,
-                    isFollowing: !!isFollowing
+                    isFollowing: !!isFollowing,
+                    isFollower: !!isFollower
                 }
             }
         });
@@ -186,7 +204,9 @@ export const createVideo = async (req, res) => {
             videoUrl: videoUrl,
             thumbnailUrl: thumbnailUrl,
             user: req.user._id,
-            duration: '00:00' // Placeholder for now
+            duration: req.body.duration || '00:00',
+            durationSec: req.body.durationSec || 0,
+            visibility: req.body.visibility || 'public'
         });
 
         res.status(201).json({
@@ -277,6 +297,19 @@ export const addView = async (req, res) => {
         video.views += 1;
         await video.save();
 
+        // Log Analytics
+        try {
+            await Analytics.create({
+                video: video._id,
+                user: req.user ? req.user.id : undefined, // Log user if authenticated
+                type: 'view',
+                date: new Date()
+            });
+        } catch (err) {
+            console.error('Analytics log error:', err);
+            // Don't fail the request if logging fails
+        }
+
         res.json({
             success: true,
             views: video.views
@@ -333,6 +366,18 @@ export const toggleLike = async (req, res) => {
                 });
             }
 
+            // Log Analytics (Like)
+            try {
+                await Analytics.create({
+                    video: video._id,
+                    user: req.user.id,
+                    type: 'like',
+                    date: new Date()
+                });
+            } catch (err) {
+                console.error('Analytics like log error:', err);
+            }
+
             return res.json({
                 success: true,
                 message: 'Video liked',
@@ -365,7 +410,8 @@ export const getRecommendations = async (req, res) => {
         // Strategy: Get videos from same creator + videos with similar view counts
         const sameCreatorVideos = await Video.find({
             user: currentVideo.user,
-            _id: { $ne: req.params.id } // Exclude current video
+            _id: { $ne: req.params.id }, // Exclude current video
+            visibility: 'public' // Ensure recommendations are public
         })
             .populate('user', 'username avatar')
             .limit(5)
@@ -378,7 +424,8 @@ export const getRecommendations = async (req, res) => {
         const similarVideos = await Video.find({
             _id: { $ne: req.params.id },
             user: { $ne: currentVideo.user }, // From different creators
-            views: { $gte: minViews, $lte: maxViews }
+            views: { $gte: minViews, $lte: maxViews },
+            visibility: 'public' // Ensure recommendations are public
         })
             .populate('user', 'username avatar')
             .limit(5)

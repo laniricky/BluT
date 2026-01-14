@@ -9,14 +9,33 @@ const UploadPage = () => {
     const [description, setDescription] = useState('');
     const [tags, setTags] = useState('');
     const [category, setCategory] = useState('Other');
+    const [visibility, setVisibility] = useState('public');
     const [videoFile, setVideoFile] = useState(null);
     const [thumbnailFile, setThumbnailFile] = useState(null);
+    const [duration, setDuration] = useState('00:00');
+    const [durationSec, setDurationSec] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     const handleFileChange = (e, type) => {
         const file = e.target.files[0];
-        if (type === 'video') setVideoFile(file);
+        if (type === 'video') {
+            setVideoFile(file);
+            // Extract duration
+            const videoElement = document.createElement('video');
+            videoElement.preload = 'metadata';
+            videoElement.onloadedmetadata = function () {
+                window.URL.revokeObjectURL(videoElement.src);
+                const duration = videoElement.duration;
+                setDurationSec(duration);
+
+                // Format duration
+                const minutes = Math.floor(duration / 60);
+                const seconds = Math.floor(duration % 60);
+                setDuration(`${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+            }
+            videoElement.src = URL.createObjectURL(file);
+        }
         else setThumbnailFile(file);
     };
 
@@ -36,8 +55,11 @@ const UploadPage = () => {
         formData.append('description', description);
         formData.append('tags', tags);
         formData.append('category', category);
+        formData.append('visibility', visibility);
         formData.append('video', videoFile);
         formData.append('thumbnail', thumbnailFile);
+        formData.append('duration', duration);
+        formData.append('durationSec', durationSec);
 
         try {
             const response = await api.post('/videos', formData, {
@@ -119,6 +141,21 @@ const UploadPage = () => {
                                 placeholder="react, coding, tutorial"
                             />
                         </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-gray-300 mb-2 font-medium">Visibility</label>
+                        <select
+                            value={visibility}
+                            onChange={(e) => setVisibility(e.target.value)}
+                            className="w-full bg-[#0F172A] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none"
+                        >
+                            <option value="public">Public</option>
+                            <option value="private">Private</option>
+                        </select>
+                        <p className="text-gray-500 text-xs mt-1">
+                            Private videos are only visible to you.
+                        </p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

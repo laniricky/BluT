@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import Navbar from '../components/Navbar';
-import { FaEye, FaThumbsUp, FaUsers, FaVideo } from 'react-icons/fa';
+import { FaEye, FaThumbsUp, FaUsers, FaVideo, FaChartBar } from 'react-icons/fa';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const DashboardPage = () => {
     const [stats, setStats] = useState(null);
@@ -77,14 +78,49 @@ const DashboardPage = () => {
 
                     <div className="bg-[#1E293B] p-6 rounded-xl border border-[#334155]">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-gray-400 font-medium">Total Subscribers</h3>
+                            <h3 className="text-gray-400 font-medium">Total Followers</h3>
                             <div className="p-3 bg-purple-500/10 text-purple-500 rounded-lg">
                                 <FaUsers size={20} />
                             </div>
                         </div>
-                        <p className="text-3xl font-bold text-white">{stats?.subscribersCount.toLocaleString()}</p>
+                        <p className="text-3xl font-bold text-white">{stats?.followersCount.toLocaleString()}</p>
                     </div>
                 </div>
+
+
+                {/* Main Analytics Chart */}
+                {stats?.chartData && stats.chartData.length > 0 && (
+                    <div className="bg-[#1E293B] p-6 rounded-xl border border-[#334155] mb-10">
+                        <div className="flex items-center gap-3 mb-6">
+                            <FaChartBar className="text-blue-500" />
+                            <h2 className="text-xl font-bold text-white">Channel Analytics (Last 30 Days)</h2>
+                        </div>
+                        <div className="h-80 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart
+                                    data={stats.chartData}
+                                    margin={{
+                                        top: 5,
+                                        right: 30,
+                                        left: 20,
+                                        bottom: 5,
+                                    }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                                    <XAxis dataKey="date" stroke="#94a3b8" />
+                                    <YAxis stroke="#94a3b8" />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#1E293B', border: '1px solid #334155', color: '#fff' }}
+                                        cursor={{ fill: '#334155', opacity: 0.2 }}
+                                    />
+                                    <Legend />
+                                    <Bar dataKey="views" fill="#3b82f6" name="Views" />
+                                    <Bar dataKey="likes" fill="#ef4444" name="Likes" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                )}
 
                 {/* Video Performance Table */}
                 <h2 className="text-xl font-bold text-white mb-6">Video Performance</h2>
@@ -123,8 +159,11 @@ const DashboardPage = () => {
                                             {video.likesCount?.toLocaleString() || 0}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <span className="px-2 py-1 bg-green-500/10 text-green-500 rounded-full text-xs font-medium border border-green-500/20">
-                                                Public
+                                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${video.visibility === 'private'
+                                                ? 'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                                                : 'bg-green-500/10 text-green-500 border-green-500/20'
+                                                }`}>
+                                                {video.visibility === 'private' ? 'Private' : 'Public'}
                                             </span>
                                         </td>
                                     </tr>
@@ -141,7 +180,7 @@ const DashboardPage = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

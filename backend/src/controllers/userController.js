@@ -23,10 +23,16 @@ export const getUserProfile = async (req, res) => {
 
         // Check if current logged-in user is following
         let isFollowing = false;
+        let isFollower = false;
         if (req.user) {
             isFollowing = await Follow.exists({
                 follower: req.user._id,
                 following: user._id,
+            });
+
+            isFollower = await Follow.exists({
+                follower: user._id,
+                following: req.user._id,
             });
         }
 
@@ -37,6 +43,7 @@ export const getUserProfile = async (req, res) => {
                 followersCount,
                 videosCount,
                 isFollowing: !!isFollowing,
+                isFollower: !!isFollower,
             },
         });
     } catch (error) {

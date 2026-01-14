@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,10 @@ import VideoRecommendations from '../components/VideoRecommendations';
 import { VideoPlayerSkeleton, CommentSkeleton } from '../components/LoadingSkeleton';
 import Tooltip from '../components/Tooltip';
 
+import NoteEditor from '../components/NoteEditor';
+import SceneList from '../components/SceneList';
+import VideoPlayer from '../components/VideoPlayer';
+
 const WatchPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -20,6 +24,9 @@ const WatchPage = () => {
     const [error, setError] = useState(null);
     const [isLiked, setIsLiked] = useState(false);
     const [likesCount, setLikesCount] = useState(0);
+    const [currentTime, setCurrentTime] = useState(0); // Track current time properly
+    const [notes, setNotes] = useState([]); // Creator Notes active state
+    const [scenes, setScenes] = useState([]); // Video Scenes/Chapters
 
     // Increment view count on mount (or specific event)
     useEffect(() => {
@@ -71,27 +78,23 @@ const WatchPage = () => {
     }, [initialProgress]);
 
     // Periodic Progress Saver
-    useEffect(() => {
-        if (!isAuthenticated || !videoRef.current) return;
+    // Note: VideoPlayer handles onProgress, but we might still want a periodic save for redundancy or just rely on onProgress (throttled).
+    // Let's implement a simple throttled save in the handleProgress callback below instead of useEffect + ref approach, it's cleaner.
+    const lastSaveTime = useRef(0);
+    const handleProgress = async (time) => {
+        setCurrentTime(time);
 
-        const interval = setInterval(async () => {
-            if (videoRef.current && !videoRef.current.paused) {
-                const currentTime = videoRef.current.currentTime;
-                const duration = videoRef.current.duration;
-
-                // Don't save if almost finished (> 95%)
-                if (duration && (currentTime / duration) > 0.95) return;
-
-                try {
-                    await api.post(`/users/history/${id}`, { progress: currentTime });
-                } catch (err) {
-                    // Silent fail
-                }
+        // Save history every 15 seconds
+        const now = Date.now();
+        if (now - lastSaveTime.current > 15000 && isAuthenticated) {
+            try {
+                await api.post(`/users/history/${id}`, { progress: time });
+                lastSaveTime.current = now;
+            } catch (err) {
+                // Silent fail
             }
-        }, 15000); // Save every 15 seconds
-
-        return () => clearInterval(interval);
-    }, [id, isAuthenticated]);
+        }
+    };
 
     useEffect(() => {
         const fetchVideo = async () => {
@@ -113,63 +116,39 @@ const WatchPage = () => {
             }
         };
 
-        fetchVideo();
-    }, [id]);
-
-    // Keyboard Shortcuts
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-            // Ignore shortcuts if user is typing in comments or search
-            if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
-
-            const video = videoRef.current;
-            if (!video) return;
-
-            switch (e.key.toLowerCase()) {
-                case ' ':
-                case 'k':
-                    e.preventDefault();
-                    video.paused ? video.play() : video.pause();
-                    break;
-                case 'f':
-                    e.preventDefault();
-                    if (document.fullscreenElement) {
-                        document.exitFullscreen();
-                    } else {
-                        video.parentElement.requestFullscreen();
-                    }
-                    break;
-                case 'm':
-                    video.muted = !video.muted;
-                    break;
-                case 'j':
-                    video.currentTime = Math.max(0, video.currentTime - 10);
-                    break;
-                case 'l':
-                    video.currentTime = Math.min(video.duration, video.currentTime + 10);
-                    break;
-                case 'arrowleft':
-                    video.currentTime = Math.max(0, video.currentTime - 5);
-                    break;
-                case 'arrowright':
-                    video.currentTime = Math.min(video.duration, video.currentTime + 5);
-                    break;
-                case 'arrowup':
-                    e.preventDefault(); // Prevent page scroll
-                    video.volume = Math.min(1, video.volume + 0.1);
-                    break;
-                case 'arrowdown':
-                    e.preventDefault(); // Prevent page scroll
-                    video.volume = Math.max(0, video.volume - 0.1);
-                    break;
-                default:
-                    break;
+        const fetchNotes = async () => {
+            try {
+                const response = await api.get(`/videos/${id}/notes`);
+                if (response.data.success) {
+                    setNotes(response.data.data);
+                }
+            } catch (err) {
+                console.error("Error fetching notes:", err);
             }
         };
 
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
-    }, []);
+        const fetchScenes = async () => {
+            try {
+                const response = await api.get(`/videos/${id}/scenes`);
+                if (response.data.success) {
+                    setScenes(response.data.data);
+                }
+            } catch (err) {
+                console.error("Error fetching scenes:", err);
+            }
+        };
+
+        fetchVideo();
+        fetchNotes();
+        fetchScenes();
+    }, [id]);
+
+    // Keyboard Shortcuts - MOVED TO VideoPlayer.jsx
+    // But we still need global shortcuts? VideoPlayer handles them when focused or generally attached to window.
+    // VideoPlayer attaches to window, so we should remove this effect to avoid duplicates.
+    // However, WatchPage logic for specific keys not in player? 
+    // The player handles Space, K, F, M, Arrows.
+    // We can remove this entire block.
 
     const handleLike = async () => {
         if (!isAuthenticated) {
@@ -250,22 +229,26 @@ const WatchPage = () => {
                     {/* Left Column: Video Player & Info */}
                     <div className="lg:col-span-2">
                         {/* Video Player Container */}
-                        <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-[#1E293B]">
-                            <video
-                                ref={videoRef}
+                        {/* Video Player Container */}
+                        <div className="w-full"> {/* Wrapper not strictly needed if Player handles sizing, but good for layout */}
+                            <VideoPlayer
                                 src={video.videoUrl}
                                 poster={video.thumbnailUrl}
-                                controls
-                                autoPlay
-                                className="w-full h-full"
-                                onLoadedMetadata={(e) => {
-                                    if (initialProgress > 0) {
-                                        e.target.currentTime = initialProgress;
-                                    }
-                                }}
-                            >
-                                Your browser does not support the video tag.
-                            </video>
+                                notes={notes}
+                                scenes={scenes}
+                                initialTime={initialProgress}
+                                onProgress={handleProgress}
+                                // We don't have direct ref to video anymore for external control (like comments seek)
+                                // We need to handle seek from external components.
+                                // Solution: Lift seeking state or use a custom event / context?
+                                // Simple: Expose a way to seek, maybe pass a ref TO the player?
+                                // Or use a `seekTo` prop that we change?
+                                // Let's use `key` force re-render? No.
+                                // Let's pass a `ref` to VideoPlayer that it populates with its internal video ref?
+                                // VideoPlayer is a functional component, needs forwardRef.
+                                // Actually, let's keep it simple: VideoPlayer CAN accept a ref.
+                                ref={videoRef} // We need to update VideoPlayer to use forwardRef
+                            />
                         </div>
 
                         {/* Video Title & Meta */}
@@ -333,6 +316,7 @@ const WatchPage = () => {
                                                 <FollowButton
                                                     channelId={video.user._id}
                                                     initialIsFollowing={video.user.isFollowing}
+                                                    initialIsFollower={video.user.isFollower}
                                                     onToggle={(newStatus) => {
                                                         // Update local video state to reflect new follower count
                                                         setVideo(prev => ({
@@ -353,6 +337,17 @@ const WatchPage = () => {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Creator Notes Editor (Owner Only) */}
+                            {isAuthenticated && video.user && user && (video.user._id === user._id || video.user === user._id) && (
+                                <NoteEditor
+                                    videoId={id}
+                                    currentTime={currentTime}
+                                    notes={notes}
+                                    onNoteAdded={(newNote) => setNotes([...notes, newNote])}
+                                    onNoteDeleted={(noteId) => setNotes(notes.filter(n => n._id !== noteId))}
+                                />
+                            )}
                         </div>
 
                         {/* Mobile Recommendations (Visible only on lg screens and below - wait, no, logic is: visible on mobile, hidden on desktop... wait) */}
@@ -375,12 +370,39 @@ const WatchPage = () => {
                             <VideoRecommendations currentVideoId={id} />
                         </div>
 
-                        <CommentSection videoId={id} />
+                        <CommentSection
+                            videoId={id}
+                            currentTime={videoRef.current?.currentTime || 0}
+                            scenes={scenes}
+                            onSeek={(time) => {
+                                if (videoRef.current) {
+                                    videoRef.current.currentTime = time;
+                                    videoRef.current.play(); // Auto play after seek
+                                }
+                            }}
+                        />
                     </div>
 
                     {/* Right Column: Recommended Videos (Desktop only) */}
                     <div className="hidden lg:block">
                         <VideoRecommendations currentVideoId={id} />
+
+                        <SceneList
+                            videoId={id}
+                            currentTime={currentTime}
+                            scenes={scenes}
+                            onSceneAdded={(newScene) => {
+                                const updatedScenes = [...scenes, newScene].sort((a, b) => a.timestamp - b.timestamp);
+                                setScenes(updatedScenes);
+                            }}
+                            onSceneDeleted={(sceneId) => setScenes(scenes.filter(s => s._id !== sceneId))}
+                            onSeek={(time) => {
+                                if (videoRef.current) {
+                                    videoRef.current.currentTime = time;
+                                    videoRef.current.play();
+                                }
+                            }}
+                        />
                     </div>
                 </div>
             </div>

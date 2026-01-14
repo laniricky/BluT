@@ -29,6 +29,12 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..'); // Go up to backend root
 app.use('/uploads', express.static(path.join(rootDir, 'uploads')));
 
+import { apiLimiter, authLimiter } from './config/rateLimit.js';
+
+// Apply rate limiting
+// app.use('/api', apiLimiter);
+// app.use('/api/auth', authLimiter);
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/videos', videoRoutes);

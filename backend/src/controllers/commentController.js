@@ -7,7 +7,7 @@ import Notification from '../models/Notification.js';
 // @access  Private
 export const addComment = async (req, res) => {
     try {
-        const { content, parentId } = req.body;
+        const { content, parentId, timestamp } = req.body;
         const videoId = req.params.id;
 
         const video = await Video.findById(videoId);
@@ -19,7 +19,8 @@ export const addComment = async (req, res) => {
             content,
             video: videoId,
             user: req.user.id,
-            parentId: parentId || null // Handle replies
+            parentId: parentId || null, // Handle replies
+            timestamp: timestamp || null,
         });
 
         // Populate user details for immediate display

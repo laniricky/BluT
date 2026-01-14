@@ -79,8 +79,8 @@ const HomePage = () => {
                             key={cat.id}
                             onClick={() => setSelectedCategory(cat.id)}
                             className={`flex items-center gap-2 px-6 py-2 border rounded-full transition-all whitespace-nowrap group ${selectedCategory === cat.id
-                                    ? 'bg-blue-600 border-blue-500 text-white'
-                                    : 'bg-[#1E293B] border-[#334155] text-gray-300 hover:text-white hover:border-blue-500 hover:bg-[#334155]'
+                                ? 'bg-blue-600 border-blue-500 text-white'
+                                : 'bg-[#1E293B] border-[#334155] text-gray-300 hover:text-white hover:border-blue-500 hover:bg-[#334155]'
                                 }`}
                         >
                             <span className="group-hover:scale-110 transition-transform">{cat.icon}</span>
@@ -138,7 +138,7 @@ const ContinueWatchingRow = () => {
                                  If we stored 'duration' (seconds) on Video model, we could calculate percentage.
                                  For now, just showing a partial bar to indicate 'in progress'.
                              */}
-                            <div className="h-full bg-red-600" style={{ width: '40%' }}></div>
+                            <div className="h-full bg-red-600" style={{ width: `${Math.min(100, (item.progress / (item.video.durationSec || 1)) * 100)}%` }}></div>
                         </div>
                         <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">

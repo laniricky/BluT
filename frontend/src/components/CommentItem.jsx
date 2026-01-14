@@ -4,7 +4,7 @@ import { FaTrash, FaUserCircle, FaThumbsUp, FaRegThumbsUp, FaThumbsDown, FaRegTh
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
-const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate }) => {
+const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate, onSeek }) => {
     const { user, isAuthenticated } = useAuth();
     const canDelete = user && comment.user && user._id === comment.user._id;
 
@@ -19,6 +19,14 @@ const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate }) => 
 
     const isLiked = user && likes.includes(user._id);
     const isDisliked = user && dislikes.includes(user._id);
+
+    // Format seconds to MM:SS
+    const formatTime = (seconds) => {
+        if (!seconds && seconds !== 0) return "";
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
 
     const handleVote = async (type) => { // type: 'like' or 'dislike'
         if (!isAuthenticated) return alert("Please login to vote");
@@ -92,6 +100,14 @@ const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate }) => 
                         <span className="text-xs text-gray-500">
                             {new Date(comment.createdAt).toLocaleDateString()}
                         </span>
+                        {comment.timestamp !== null && comment.timestamp !== undefined && (
+                            <button
+                                onClick={() => onSeek && onSeek(comment.timestamp)}
+                                className="text-xs bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 px-2 py-0.5 rounded cursor-pointer transition-colors font-mono"
+                            >
+                                {formatTime(comment.timestamp)}
+                            </button>
+                        )}
                         {comment.isEdited && (
                             <span className="text-xs text-gray-600 italic">(edited)</span>
                         )}
@@ -212,6 +228,7 @@ const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate }) => 
                                 onDelete={onDelete}
                                 onReply={onReply}
                                 onUpdate={onUpdate}
+                                onSeek={onSeek}
                             />
                         ))}
                     </div>

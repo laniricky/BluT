@@ -115,7 +115,7 @@ const NotificationBell = () => {
                                             <span className="font-semibold text-white">{notification.sender.username}</span>
                                             {notification.type === 'like' && ' liked your video'}
                                             {notification.type === 'comment' && ' commented on your video'}
-                                            {notification.type === 'subscribe' && ' subscribed to your channel'}
+                                            {notification.type === 'follow' && ' followed you'}
                                         </p>
                                         {notification.video && (
                                             <p className="text-gray-500 text-xs truncate mt-0.5">

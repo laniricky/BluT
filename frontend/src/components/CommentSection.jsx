@@ -5,12 +5,51 @@ import CommentItem from './CommentItem';
 import { FaUserCircle } from 'react-icons/fa';
 import { CommentSkeleton } from './LoadingSkeleton';
 
-const CommentSection = ({ videoId }) => {
+const CommentSection = ({ videoId, currentTime, onSeek, scenes = [] }) => {
     const { user, isAuthenticated } = useAuth();
     const [comments, setComments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [newComment, setNewComment] = useState('');
     const [submitLoading, setSubmitLoading] = useState(false);
+    const [includeTimestamp, setIncludeTimestamp] = useState(false);
+    const [filterMode, setFilterMode] = useState('all'); // 'all' | 'scene'
+
+    // Determine current scene
+    const currentScene = useMemo(() => {
+        if (!scenes || scenes.length === 0) return null;
+        // scenes must be sorted by timestamp
+        // Find the scene that starts before or at currentTime
+        const active = [...scenes].reverse().find(s => currentTime >= s.timestamp);
+
+        if (!active) return null;
+
+        // Determine end time (timestamp of next scene or end of video - just next scene for now)
+        const activeIndex = scenes.findIndex(s => s._id === active._id);
+        const nextScene = scenes[activeIndex + 1];
+
+        return {
+            ...active,
+            endTime: nextScene ? nextScene.timestamp : Infinity
+        };
+    }, [currentTime, scenes]);
+
+    // Count comments for current scene
+    const sceneCommentsCount = useMemo(() => {
+        if (!currentScene) return 0;
+        return comments.filter(c =>
+            c.timestamp !== null &&
+            c.timestamp >= currentScene.timestamp &&
+            c.timestamp < currentScene.endTime
+        ).length;
+    }, [comments, currentScene]);
+
+    // Format seconds to MM:SS
+    const formatTime = (seconds) => {
+        if (!seconds) return "0:00";
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
 
     useEffect(() => {
         const fetchComments = async () => {
@@ -29,10 +68,20 @@ const CommentSection = ({ videoId }) => {
         if (videoId) fetchComments();
     }, [videoId]);
 
-    // Group comments by parentId
+    // Group comments by parentId and apply filter
     const rootComments = useMemo(() => {
-        return comments.filter(c => !c.parentId);
-    }, [comments]);
+        let filtered = comments.filter(c => !c.parentId);
+
+        if (filterMode === 'scene' && currentScene) {
+            filtered = filtered.filter(c =>
+                c.timestamp !== null &&
+                c.timestamp >= currentScene.timestamp &&
+                c.timestamp < currentScene.endTime
+            );
+        }
+
+        return filtered;
+    }, [comments, filterMode, currentScene]);
 
     const getReplies = (commentId) => {
         return comments.filter(c => c.parentId === commentId)
@@ -46,12 +95,14 @@ const CommentSection = ({ videoId }) => {
         setSubmitLoading(true);
         try {
             const response = await api.post(`/videos/${videoId}/comments`, {
-                content: newComment
+                content: newComment,
+                timestamp: includeTimestamp ? Math.floor(currentTime) : null
             });
 
             if (response.data.success) {
                 setComments([response.data.data, ...comments]);
                 setNewComment('');
+                setIncludeTimestamp(false);
             }
         } catch (error) {
             console.error('Error adding comment:', error);
@@ -99,9 +150,41 @@ const CommentSection = ({ videoId }) => {
 
     return (
         <div className="mt-8">
-            <h3 className="text-xl font-bold text-white mb-6">
-                {comments.length} Comments
-            </h3>
+            <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-white">
+                    {comments.length} Comments
+                </h3>
+
+                {/* Filter Tabs */}
+                {scenes.length > 0 && (
+                    <div className="flex bg-[#1E293B] rounded-lg p-1">
+                        <button
+                            onClick={() => setFilterMode('all')}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${filterMode === 'all'
+                                    ? 'bg-[#334155] text-white shadow-sm'
+                                    : 'text-gray-400 hover:text-gray-300'
+                                }`}
+                        >
+                            All Comments
+                        </button>
+                        <button
+                            onClick={() => setFilterMode('scene')}
+                            disabled={!currentScene}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-2 ${filterMode === 'scene'
+                                    ? 'bg-blue-600 text-white shadow-sm'
+                                    : 'text-gray-400 hover:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed'
+                                }`}
+                        >
+                            Current Scene
+                            {sceneCommentsCount > 0 && (
+                                <span className="bg-blue-500/20 text-blue-200 text-[10px] px-1.5 rounded-full">
+                                    {sceneCommentsCount}
+                                </span>
+                            )}
+                        </button>
+                    </div>
+                )}
+            </div>
 
             {/* Input - Only if logged in */}
             {isAuthenticated ? (
@@ -128,6 +211,18 @@ const CommentSection = ({ videoId }) => {
                                 placeholder="Add a comment..."
                                 className="w-full bg-[#0F172A] border-b border-[#334155] text-white px-2 py-2 focus:outline-none focus:border-blue-500 transition-colors pb-2"
                             />
+                            {/* Timestamp Toggle */}
+                            <div className="flex items-center gap-2 mt-2">
+                                <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer hover:text-white transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={includeTimestamp}
+                                        onChange={(e) => setIncludeTimestamp(e.target.checked)}
+                                        className="rounded border-gray-600 bg-[#334155] text-blue-600 focus:ring-offset-[#0F172A]"
+                                    />
+                                    <span>Timestamp at {formatTime(currentTime)}</span>
+                                </label>
+                            </div>
                             <div className="flex justify-end mt-2">
                                 <button
                                     type="submit"
@@ -164,6 +259,7 @@ const CommentSection = ({ videoId }) => {
                             onReply={handleReply}
                             onUpdate={handleUpdateLocal}
                             replies={getReplies(comment._id)}
+                            onSeek={onSeek}
                         />
                     ))}
                     {comments.length === 0 && (
