@@ -302,7 +302,7 @@ const WatchPage = () => {
                                         </button>
                                     </Tooltip>
 
-                                    {isAuthenticated && video.user && user && (video.user._id === user._id || video.user === user._id) && (
+                                    {isAuthenticated && video.user && user && (String(video.user._id) === String(user._id || user.id) || video.user === (user._id || user.id)) && (
                                         <Tooltip text="Delete your video permanently">
                                             <button
                                                 onClick={handleDelete}
@@ -332,7 +332,7 @@ const WatchPage = () => {
                                             </span>
                                         </div>
                                         <div className="mt-2">
-                                            {video.user && (!user || (user && String(video.user._id) !== String(user._id))) && (
+                                            {video.user && (!user || (user && String(video.user._id) !== String(user._id || user.id))) && (
                                                 <FollowButton
                                                     channelId={video.user._id}
                                                     initialIsFollowing={video.user.isFollowing}
@@ -378,7 +378,7 @@ const WatchPage = () => {
                             </div>
 
                             {/* Creator Notes Editor (Owner Only) */}
-                            {isAuthenticated && video.user && user && (video.user._id === user._id || video.user === user._id) && (
+                            {isAuthenticated && video.user && user && (String(video.user._id) === String(user._id || user.id) || video.user === (user._id || user.id)) && (
                                 <NoteEditor
                                     videoId={id}
                                     currentTime={currentTime}
@@ -419,7 +419,7 @@ const WatchPage = () => {
                                     videoRef.current.play(); // Auto play after seek
                                 }
                             }}
-                            isVideoOwner={isAuthenticated && video.user && user && (video.user._id === user._id || video.user === user._id)}
+                            isVideoOwner={isAuthenticated && video.user && user && (String(video.user._id) === String(user._id || user.id) || video.user === (user._id || user.id))}
                         />
                     </div>
 

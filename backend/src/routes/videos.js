@@ -1,5 +1,5 @@
 import express from 'express';
-import { getVideos, getVideoById, createVideo, deleteVideo, toggleLike, addView, getRecommendations } from '../controllers/videoController.js';
+import { getVideos, getVideoById, createVideo, deleteVideo, toggleLike, addView, getRecommendations, getAlgorithmicFeed, getFollowingFeed, getShorts } from '../controllers/videoController.js';
 import { addComment, getComments, deleteComment, updateComment, toggleCommentLike, toggleCommentDislike, togglePin, toggleHeart } from '../controllers/commentController.js';
 import { getNotes, addNote, deleteNote } from '../controllers/noteController.js';
 import { getScenes, addScene, deleteScene } from '../controllers/sceneController.js';
@@ -8,6 +8,11 @@ import { uploadVideo } from '../middleware/upload.js';
 import { uploadLimiter, generalLimiter } from '../middleware/rateLimiters.js';
 
 const router = express.Router();
+
+// Feed Routes (before other routes to avoid conflicts)
+router.get('/feed/algorithmic', generalLimiter, optionalProtect, getAlgorithmicFeed);
+router.get('/feed/following', generalLimiter, protect, getFollowingFeed);
+router.get('/shorts', generalLimiter, optionalProtect, getShorts);
 
 router.get('/', generalLimiter, getVideos);
 router.post('/', protect, uploadLimiter, uploadVideo, createVideo);

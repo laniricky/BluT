@@ -1,5 +1,5 @@
 import express from 'express';
-import { getUserProfile, updateProfile, toggleFollow, addToWatchHistory, getWatchHistory, getUserVideos } from '../controllers/userController.js';
+import { getUserProfile, updateProfile, toggleFollow, addToWatchHistory, getWatchHistory, getUserVideos, getUserFollowers, getUserFollowing } from '../controllers/userController.js';
 import { getCreatorStats } from '../controllers/dashboardController.js';
 import { protect, optionalProtect } from '../middleware/auth.js';
 
@@ -17,5 +17,7 @@ router.get('/dashboard/stats', protect, getCreatorStats);
 // Public Routes
 router.get('/:username', optionalProtect, getUserProfile);
 router.get('/:id/videos', optionalProtect, getUserVideos);
+router.get('/:id/followers', optionalProtect, getUserFollowers);
+router.get('/:id/following', optionalProtect, getUserFollowing);
 
 export default router;

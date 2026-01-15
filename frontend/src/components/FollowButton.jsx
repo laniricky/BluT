@@ -32,7 +32,7 @@ const FollowButton = ({ channelId, initialIsFollowing, initialIsFollower, onTogg
         }
     };
 
-    if (user && String(user._id) === String(channelId)) {
+    if (user && String(user._id || user.id) === String(channelId)) {
         return (
             <button
                 className={`bg-gray-700 text-gray-300 cursor-default px-4 rounded-full font-medium ${large ? 'py-3 text-base' : 'py-2 text-sm'}`}

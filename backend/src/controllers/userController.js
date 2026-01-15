@@ -210,3 +210,45 @@ export const getUserVideos = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error retrieving user videos' });
     }
 };
+
+// @route   GET /api/users/:id/followers
+// @desc    Get user followers
+// @access  Public
+export const getUserFollowers = async (req, res) => {
+    try {
+        const followers = await Follow.find({ following: req.params.id })
+            .populate('follower', 'username avatar bio')
+            .sort({ createdAt: -1 });
+
+        const formattedFollowers = followers.map(f => f.follower);
+
+        res.json({
+            success: true,
+            followers: formattedFollowers
+        });
+    } catch (error) {
+        console.error('Get followers error:', error);
+        res.status(500).json({ success: false, message: 'Server error retrieving followers' });
+    }
+};
+
+// @route   GET /api/users/:id/following
+// @desc    Get user following
+// @access  Public
+export const getUserFollowing = async (req, res) => {
+    try {
+        const following = await Follow.find({ follower: req.params.id })
+            .populate('following', 'username avatar bio')
+            .sort({ createdAt: -1 });
+
+        const formattedFollowing = following.map(f => f.following);
+
+        res.json({
+            success: true,
+            following: formattedFollowing
+        });
+    } catch (error) {
+        console.error('Get following error:', error);
+        res.status(500).json({ success: false, message: 'Server error retrieving following' });
+    }
+};

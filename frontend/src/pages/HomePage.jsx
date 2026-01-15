@@ -5,6 +5,7 @@ import api from '../api/axios';
 import VideoGrid from '../components/VideoGrid';
 import VideoRow from '../components/VideoRow';
 import Navbar from '../components/Navbar';
+import FeedToggle from '../components/FeedToggle';
 import { FaFire, FaClock, FaStar } from 'react-icons/fa';
 
 const HomePage = () => {
@@ -14,28 +15,46 @@ const HomePage = () => {
     const [error, setError] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState('All');
 
+    // Feed type state - persist in localStorage
+    const [activeFeed, setActiveFeed] = useState(() => {
+        return localStorage.getItem('bluT_feedType') || 'forYou';
+    });
+
     const [continueWatching, setContinueWatching] = useState([]);
     const [recentVideos, setRecentVideos] = useState([]);
 
+    // Handle feed type change and persist to localStorage
+    const handleFeedTypeChange = (feedType) => {
+        setActiveFeed(feedType);
+        localStorage.setItem('bluT_feedType', feedType);
+    };
+
+    // Fetch main feed based on active feed type and category
     useEffect(() => {
-        const fetchContent = async () => {
+        const fetchMainFeed = async () => {
             setLoading(true);
+            setError(null);
             try {
-                // Fetch Main Grid Videos (Filtered by Category)
+                let endpoint = '/videos'; // Default fallback
                 const params = {};
+
+                // Add category filter if not 'All'
                 if (selectedCategory !== 'All') {
                     params.category = selectedCategory;
                 }
-                const videosRes = await api.get('/videos', { params });
+
+                // Choose endpoint based on feed type
+                if (activeFeed === 'forYou') {
+                    endpoint = '/videos/feed/algorithmic';
+                } else if (activeFeed === 'following') {
+                    endpoint = '/videos/feed/following';
+                }
+
+                const videosRes = await api.get(endpoint, { params });
 
                 if (videosRes.data.success) {
                     setVideos(videosRes.data.data);
                 }
-
-                // Fetch Feeds (Only on mount or if needed, mainly on mount)
-                // We could separate this effect if we don't want to re-fetch feeds 
-                // when changing category, but for simplicity we can keep it or separate it.
-                // Let's separate standard feed fetching to only run once.
             } catch (err) {
                 console.error("Error loading videos:", err);
                 setError('Unable to load content.');
@@ -43,8 +62,8 @@ const HomePage = () => {
                 setLoading(false);
             }
         };
-        fetchContent();
-    }, [selectedCategory]);
+        fetchMainFeed();
+    }, [selectedCategory, activeFeed]);
 
     // Separate effect for Feeds (Recent & Continue Watching) - runs once
     useEffect(() => {
@@ -88,6 +107,14 @@ const HomePage = () => {
         { id: 'Entertainment', name: 'Fun', icon: <FaFire className="text-orange-500" /> },
     ];
 
+    // Determine main grid title based on active feed
+    const getMainGridTitle = () => {
+        if (activeFeed === 'following') {
+            return selectedCategory === 'All' ? 'Following' : `Following - ${selectedCategory}`;
+        }
+        return selectedCategory === 'All' ? 'For You' : `${selectedCategory} Videos`;
+    };
+
     return (
         <div className="min-h-screen bg-[#0F172A]">
             <Navbar />
@@ -95,8 +122,14 @@ const HomePage = () => {
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 py-8">
 
-                {/* Feeds Section (Only show on 'All' category) */}
-                {selectedCategory === 'All' && (
+                {/* Feed Toggle */}
+                <FeedToggle
+                    activeFeed={activeFeed}
+                    onFeedTypeChange={handleFeedTypeChange}
+                />
+
+                {/* Feeds Section (Only show on 'For You' feed and 'All' category) */}
+                {activeFeed === 'forYou' && selectedCategory === 'All' && (
                     <>
                         {/* Continue Watching Section */}
                         {user && continueWatching.length > 0 && (
@@ -129,13 +162,19 @@ const HomePage = () => {
 
                 {/* Main Video Grid */}
                 <h2 className="text-xl font-bold text-white mb-4 px-2">
-                    {selectedCategory === 'All' ? 'Recommended for You' : `${selectedCategory} Videos`}
+                    {getMainGridTitle()}
                 </h2>
 
                 {!videos.length && !loading && (
                     <div className="text-center py-20">
-                        <h2 className="text-3xl font-bold text-white mb-2">Welcome to BluT</h2>
-                        <p className="text-gray-400">No videos found. Be the first to upload!</p>
+                        <h2 className="text-3xl font-bold text-white mb-2">
+                            {activeFeed === 'following' ? 'No Videos from Followed Creators' : 'Welcome to BluT'}
+                        </h2>
+                        <p className="text-gray-400">
+                            {activeFeed === 'following'
+                                ? 'Follow creators to see their videos here!'
+                                : 'No videos found. Be the first to upload!'}
+                        </p>
                     </div>
                 )}
 
@@ -146,4 +185,3 @@ const HomePage = () => {
 };
 
 export default HomePage;
-

@@ -3,6 +3,7 @@ import Like from '../models/Like.js';
 import Follow from '../models/Follow.js';
 import Notification from '../models/Notification.js';
 import Analytics from '../models/Analytics.js';
+import { rankVideos } from '../services/feedService.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -485,3 +486,144 @@ export const logInteraction = async (req, res) => {
     }
 };
 
+// @desc    Get algorithmic feed
+// @route   GET /api/videos/feed/algorithmic
+// @access  Public
+export const getAlgorithmicFeed = async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 50;
+        const category = req.query.category;
+
+        // Build query for public videos
+        let query = { visibility: 'public' };
+        if (category && category !== 'All') {
+            query.category = category;
+        }
+
+        // Fetch videos with populated user data
+        const videos = await Video.find(query)
+            .populate('user', 'username avatar')
+            .limit(limit)
+            .lean();
+
+        // Rank videos using algorithmic scoring
+        const userId = req.user ? req.user.id : null;
+        const rankedVideos = await rankVideos(videos, userId);
+
+        res.json({
+            success: true,
+            count: rankedVideos.length,
+            data: rankedVideos
+        });
+    } catch (error) {
+        console.error('Get algorithmic feed error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server Error'
+        });
+    }
+};
+
+// @desc    Get following feed (chronological)
+// @route   GET /api/videos/feed/following
+// @access  Private
+export const getFollowingFeed = async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 50;
+        const category = req.query.category;
+
+        // Get list of users the current user follows
+        const following = await Follow.find({ follower: req.user.id })
+            .select('following')
+            .lean();
+
+        const followingIds = following.map(f => f.following);
+
+        if (followingIds.length === 0) {
+            return res.json({
+                success: true,
+                count: 0,
+                data: [],
+                message: 'Not following anyone yet'
+            });
+        }
+
+        // Build query for videos from followed users
+        let query = {
+            user: { $in: followingIds },
+            visibility: 'public'
+        };
+
+        if (category && category !== 'All') {
+            query.category = category;
+        }
+
+        // Fetch videos in reverse chronological order
+        const videos = await Video.find(query)
+            .populate('user', 'username avatar')
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .lean();
+
+        res.json({
+            success: true,
+            count: videos.length,
+            data: videos
+        });
+    } catch (error) {
+        console.error('Get following feed error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server Error'
+        });
+    }
+};
+
+// @desc    Get random shorts (videos <= 60s)
+// @route   GET /api/videos/shorts
+// @access  Public
+export const getShorts = async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 10;
+
+        // Aggregate pipeline to get random sample of shorts
+        const shorts = await Video.aggregate([
+            {
+                $match: {
+                    durationSec: { $lte: 60 },
+                    visibility: 'public'
+                }
+            },
+            { $sample: { size: limit } }, // Random selection
+        ]);
+
+        // Populate user details (aggregate returns plain objects, need populate equivalent)
+        // Since aggregate doesn't use Mongoose populate, we use model.populate
+        await Video.populate(shorts, { path: 'user', select: 'username avatar followersCount' });
+
+        // Add user-specific fields if authenticated
+        // Note: For aggregate results, we need to manually checking following/likes status if needed
+        // For MVP shorts feed, we might skip like/follow status or do it in bulk
+        // Let's do a simple map if user exists
+        if (req.user) {
+            for (let video of shorts) {
+                const isLiked = await Like.exists({ user: req.user._id, video: video._id });
+                const isFollowing = await Follow.exists({ follower: req.user._id, following: video.user._id });
+                video.isLiked = !!isLiked;
+                video.user.isFollowing = !!isFollowing;
+            }
+        }
+
+        res.json({
+            success: true,
+            count: shorts.length,
+            data: shorts
+        });
+    } catch (error) {
+        console.error('Get shorts error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server Error'
+        });
+    }
+};

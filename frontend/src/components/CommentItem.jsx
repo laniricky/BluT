@@ -6,7 +6,7 @@ import api from '../api/axios';
 
 const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate, onSeek, onPin, onHeart, isVideoOwner }) => { // Added props
     const { user, isAuthenticated } = useAuth();
-    const canDelete = user && comment.user && user._id === comment.user._id;
+    const canDelete = user && comment.user && String(user._id || user.id) === String(comment.user._id);
 
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(comment.content);
@@ -18,8 +18,8 @@ const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate, onSee
     const [likes, setLikes] = useState(comment.likes || []);
     const [dislikes, setDislikes] = useState(comment.dislikes || []);
 
-    const isLiked = user && likes.includes(user._id);
-    const isDisliked = user && dislikes.includes(user._id);
+    const isLiked = user && likes.includes(user._id || user.id);
+    const isDisliked = user && dislikes.includes(user._id || user.id);
 
     // Format seconds to MM:SS
     const formatTime = (seconds) => {
@@ -38,11 +38,11 @@ const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate, onSee
                 if (type === 'like') {
                     setLikes(response.data.data); // New likes array
                     // If we just liked, remove from dislikes locally
-                    if (!isLiked) setDislikes(dislikes.filter(id => id !== user._id));
+                    if (!isLiked) setDislikes(dislikes.filter(id => id !== (user._id || user.id)));
                 } else {
                     setDislikes(response.data.data); // New dislikes array
                     // If we just disliked, remove from likes locally
-                    if (!isDisliked) setLikes(likes.filter(id => id !== user._id));
+                    if (!isDisliked) setLikes(likes.filter(id => id !== (user._id || user.id)));
                 }
             }
         } catch (error) {

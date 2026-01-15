@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
@@ -14,6 +14,8 @@ const ProfilePage = () => {
 
     const [profile, setProfile] = useState(null);
     const [videos, setVideos] = useState([]);
+    const [followersList, setFollowersList] = useState([]);
+    const [followingList, setFollowingList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('videos');
@@ -26,11 +28,22 @@ const ProfilePage = () => {
             if (profileRes.data.success) {
                 setProfile(profileRes.data.user);
 
-                // Get User Videos (using the ID from the profile we just fetched)
-                // Note: userController.getUserVideos expects :id, not :username
+                // Get User Videos
                 const videosRes = await api.get(`/users/${profileRes.data.user._id}/videos`);
                 if (videosRes.data.success) {
                     setVideos(videosRes.data.videos);
+                }
+
+                // Get Followers
+                const followersRes = await api.get(`/users/${profileRes.data.user._id}/followers`);
+                if (followersRes.data.success) {
+                    setFollowersList(followersRes.data.followers);
+                }
+
+                // Get Following
+                const followingRes = await api.get(`/users/${profileRes.data.user._id}/following`);
+                if (followingRes.data.success) {
+                    setFollowingList(followingRes.data.following);
                 }
             }
         } catch (err) {
@@ -53,6 +66,11 @@ const ProfilePage = () => {
             isFollowing: newIsFollowing,
             followersCount: prev.followersCount + (newIsFollowing ? 1 : -1)
         }));
+        // Refetch followers list to keep it in sync
+        if (newIsFollowing) {
+            // In a real optimized app, we'd optimistically add the current user
+            // For now, simpler to just refetch or rely on next page load
+        }
     };
 
     const handleProfileUpdate = (updatedUser) => {
@@ -80,7 +98,7 @@ const ProfilePage = () => {
         </div>
     );
 
-    const isOwnProfile = currentUser && profile && String(currentUser._id) === String(profile._id);
+    const isOwnProfile = currentUser && profile && (String(currentUser._id || currentUser.id) === String(profile._id || profile.id));
 
     return (
         <div className="min-h-screen bg-[#0F172A] pb-10">
@@ -107,7 +125,6 @@ const ProfilePage = () => {
                     <div className="flex-1 w-full md:w-auto mt-2 md:mt-0 md:mb-2">
                         <div className="flex items-center gap-3">
                             <h1 className="text-3xl font-bold text-white leading-tight">{profile.username}</h1>
-                            {/* <span className="bg-blue-600 text-xs px-2 py-0.5 rounded text-white font-bold">CREATOR</span> */}
                         </div>
                         <div className="flex items-center gap-4 text-sm text-gray-400 mt-2">
                             <span>@{profile.username}</span>
@@ -151,7 +168,7 @@ const ProfilePage = () => {
 
                 {/* Tabs */}
                 <div className="flex gap-8 mt-6 border-b border-[#334155]">
-                    {['Videos', 'About'].map((tab) => (
+                    {['Videos', 'About', 'Followers', 'Following'].map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab.toLowerCase())}
@@ -191,6 +208,50 @@ const ProfilePage = () => {
                             </div>
                         </div>
                     )}
+
+                    {activeTab === 'followers' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {followersList.length > 0 ? (
+                                followersList.map(follower => (
+                                    <Link key={follower._id} to={`/u/${follower.username}`} className="flex items-center gap-4 bg-[#1E293B] p-4 rounded-xl border border-[#334155] hover:border-blue-500 transition-colors">
+                                        <img
+                                            src={follower.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${follower.username}`}
+                                            alt={follower.username}
+                                            className="w-12 h-12 rounded-full bg-black/40"
+                                        />
+                                        <div>
+                                            <h4 className="font-bold text-white">{follower.username}</h4>
+                                            {follower.bio && <p className="text-xs text-gray-400 line-clamp-1">{follower.bio}</p>}
+                                        </div>
+                                    </Link>
+                                ))
+                            ) : (
+                                <p className="text-gray-400 col-span-full text-center py-8">No followers yet.</p>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'following' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {followingList.length > 0 ? (
+                                followingList.map(following => (
+                                    <Link key={following._id} to={`/u/${following.username}`} className="flex items-center gap-4 bg-[#1E293B] p-4 rounded-xl border border-[#334155] hover:border-blue-500 transition-colors">
+                                        <img
+                                            src={following.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${following.username}`}
+                                            alt={following.username}
+                                            className="w-12 h-12 rounded-full bg-black/40"
+                                        />
+                                        <div>
+                                            <h4 className="font-bold text-white">{following.username}</h4>
+                                            {following.bio && <p className="text-xs text-gray-400 line-clamp-1">{following.bio}</p>}
+                                        </div>
+                                    </Link>
+                                ))
+                            ) : (
+                                <p className="text-gray-400 col-span-full text-center py-8">Not following anyone yet.</p>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -207,3 +268,4 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage;
+

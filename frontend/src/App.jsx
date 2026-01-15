@@ -13,6 +13,7 @@ const UploadPage = lazy(() => import('./pages/UploadPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const ShortsPage = lazy(() => import('./pages/ShortsPage'));
 
 // Protected route wrapper
 const ProtectedRoute = ({ children }) => {
@@ -43,6 +44,7 @@ function App() {
                     <Suspense fallback={<PageLoader />}>
                         <Routes>
                             <Route path="/" element={<HomePage />} />
+                            <Route path="/shorts" element={<ShortsPage />} />
                             <Route path="/search" element={<SearchPage />} />
                             <Route path="/login" element={<LoginPage />} />
                             <Route path="/register" element={<RegisterPage />} />
