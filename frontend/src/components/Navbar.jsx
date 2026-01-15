@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaCloudUploadAlt, FaSearch, FaBars, FaTimes, FaHome, FaHistory, FaTv } from 'react-icons/fa';
+import { FaCloudUploadAlt, FaSearch, FaBars, FaTimes, FaHome, FaHistory, FaTv, FaBolt } from 'react-icons/fa';
 import Tooltip from './Tooltip';
 import NotificationBell from './NotificationBell';
 import api from '../api/axios';
@@ -282,6 +282,9 @@ const Navbar = () => {
                                         <div className="space-y-2">
                                             <Link to="/" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-[#1E293B] px-4 py-3 rounded-xl transition-all">
                                                 <FaHome className="text-blue-500" /> Home
+                                            </Link>
+                                            <Link to="/shorts" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-[#1E293B] px-4 py-3 rounded-xl transition-all">
+                                                <FaBolt className="text-yellow-500" /> Shorts
                                             </Link>
                                             <Link to="/dashboard" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-[#1E293B] px-4 py-3 rounded-xl transition-all">
                                                 <FaTv className="text-purple-500" /> Dashboard
