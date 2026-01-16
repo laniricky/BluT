@@ -1,79 +1,86 @@
 # BluT - Custom Video Streaming Platform
 
-A modern video streaming platform built with React and Node.js, featuring unique interactions like scene-based comments and creator-focused tools.
+A modern video streaming platform built with React and Node.js, designed to provide a premium viewing experience with creator-focused tools and social features.
 
 ## 🚀 Tech Stack
 
 - **Frontend**: React + Vite + Tailwind CSS
 - **Backend**: Node.js + Express + Mongoose
-- **Database**: MongoDB (local)
+- **Database**: MongoDB
+- **Containerization**: Docker + Docker Compose
 - **Authentication**: JWT + bcrypt
 
-## 📋 Current Status
+## 📋 Features
 
-**Vertical Slice 1: User Authentication** ✅ In Progress
-- User registration & login
-- JWT token-based auth
-- Password hashing
+- **Authentication**: Secure user registration and login with JWT.
+- **Video Playback**: Custom video player with theater mode and quality controls.
+- **Shorts**: TikTok-style vertical video feed with infinite scroll.
+- **User Profiles**: 
+    - Custom avatars and cover photos.
+    - Follow system.
+    - Channel pages with video lists.
+- **Content Creation**:
+    - Video upload with thumbnail generation.
+    - Rich text description and tagging.
+    - **Creator Notes** for timestamped annotations (replacing standard chapters).
+- **Engagement**: 
+    - Likes, dislikes, and threaded comments.
+    - Watch history and resume playback.
+    - Algorithmic and "Following" feeds.
+- **Creator Dashboard**: Analytics for views, engagement, and follower growth.
 
-## 🛠️ Setup Instructions
+## 🛠️ Getting Started (Docker)
+
+The easiest way to run BluT is using Docker Compose.
 
 ### Prerequisites
-- Node.js (v18 or higher)
-- MongoDB installed locally
-- npm or yarn
+- Docker Desktop installed and running.
 
-### Installation
+### Installation & Run
 
-1. **Clone & Navigate**
+1. **Clone the repository**
    ```bash
    cd c:\DEV\BluT
    ```
 
-2. **Backend Setup**
+2. **Start the Application**
+   ```bash
+   docker-compose up -d --build
+   ```
+
+3. **Access the App**
+   - **Frontend**: http://localhost:3000
+   - **Backend API**: http://localhost:5000
+
+4. **Stop the Application**
+   ```bash
+   docker-compose down
+   ```
+
+## 💻 Local Development (Manual Setup)
+
+If you prefer to run locally without Docker:
+
+1. **Backend Setup**
    ```bash
    cd backend
    npm install
-   # Create .env file with your configuration
+   # Ensure local MongoDB is running
    npm run dev
    ```
 
-3. **Frontend Setup**
+2. **Frontend Setup**
    ```bash
    cd frontend
    npm install
    npm run dev
    ```
 
-4. **Start MongoDB** (Windows)
-   ```bash
-   # Make sure MongoDB is installed
-   net start MongoDB
-   ```
+## 📖 Project Structure
 
-### Environment Variables
-
-Create `backend/.env`:
-```
-MONGO_URI=mongodb://localhost:27017/blut
-JWT_SECRET=your-secret-key-change-this
-PORT=5000
-```
-
-## 📖 Development Roadmap
-
-See [myplan.md](./myplan.md) for the complete 200-day development roadmap.
-
-## 🎯 Vertical Slices
-
-1. ✅ **Authentication** - Register, Login, JWT
-2. 🔜 **Video Browsing** - List, watch, search videos
-3. 🔜 **User Profiles** - Follow creators, view profiles
-4. 🔜 **Video Upload** - Local file uploads
-5. 🔜 **Engagement** - Likes, comments
-6. 🔜 **Scene Markers** - Time-based navigation
-7. 🔜 **Creator Dashboard** - Analytics, management
-8. 🔜 **Advanced Features** - Watch history, moderation
+- `/backend` - Express REST API and MongoDB models.
+- `/frontend` - React SPA (Single Page Application).
+- `docker-compose.yml` - Orchestration for App, API, and DB.
 
 ## 📝 License
 
