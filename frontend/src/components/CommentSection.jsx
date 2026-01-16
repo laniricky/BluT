@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import CommentItem from './CommentItem';
 import { FaUserCircle } from 'react-icons/fa';
 import { CommentSkeleton } from './LoadingSkeleton';
+import Avatar from './Avatar';
 
 const CommentSection = ({ videoId, currentTime, onSeek, scenes = [], isVideoOwner }) => { // Accepted isVideoOwner prop
     const { user, isAuthenticated } = useAuth();
@@ -236,17 +237,7 @@ const CommentSection = ({ videoId, currentTime, onSeek, scenes = [], isVideoOwne
             {isAuthenticated ? (
                 <div className="flex gap-4 mb-8">
                     <div className="flex-shrink-0">
-                        {user?.avatar ? (
-                            <img
-                                src={user.avatar}
-                                alt={user.username}
-                                className="w-10 h-10 rounded-full object-cover border border-[#334155]"
-                            />
-                        ) : (
-                            <div className="w-10 h-10 rounded-full bg-[#334155] flex items-center justify-center text-gray-400">
-                                <FaUserCircle size={24} />
-                            </div>
-                        )}
+                        <Avatar user={user} size="md" className="border border-[#334155]" />
                     </div>
                     <form onSubmit={handleAddComment} className="flex-1">
                         <div className="relative">

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { FaTrash, FaUserCircle, FaThumbsUp, FaRegThumbsUp, FaThumbsDown, FaRegThumbsDown, FaEdit, FaThumbtack, FaHeart, FaEllipsisV } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import Avatar from './Avatar';
 
 const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate, onSeek, onPin, onHeart, isVideoOwner }) => { // Added props
     const { user, isAuthenticated } = useAuth();
@@ -79,17 +80,7 @@ const CommentItem = ({ comment, onDelete, replies = [], onReply, onUpdate, onSee
             {/* Pinned Icon (Absolute or Integrated) */}
 
             <Link to={`/u/${comment.user?.username}`} className="flex-shrink-0 relative">
-                {comment.user?.avatar ? (
-                    <img
-                        src={comment.user.avatar}
-                        alt={comment.user.username}
-                        className="w-10 h-10 rounded-full object-cover border border-[#334155]"
-                    />
-                ) : (
-                    <div className="w-10 h-10 rounded-full bg-[#334155] flex items-center justify-center text-gray-400">
-                        <FaUserCircle size={24} />
-                    </div>
-                )}
+                <Avatar user={comment.user} size="md" className="border border-[#334155]" />
                 {/* Creator Heart Badge on Avatar? Maybe overkill. Let's put it next to likes. */}
             </Link>
             <div className="flex-1 min-w-0"> {/* min-w-0 for truncate */}

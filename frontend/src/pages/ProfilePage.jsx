@@ -105,7 +105,16 @@ const ProfilePage = () => {
             <Navbar />
 
             {/* Banner Area */}
-            <div className="h-48 md:h-64 bg-gradient-to-r from-blue-900 via-purple-900 to-slate-900 w-full relative">
+            <div className="h-48 md:h-64 bg-gray-800 w-full relative overflow-hidden">
+                {profile.coverPhoto ? (
+                    <img
+                        src={`${api.defaults.baseURL.replace('/api', '')}${profile.coverPhoto}`}
+                        alt="Cover"
+                        className="w-full h-full object-cover"
+                    />
+                ) : (
+                    <div className="w-full h-full bg-gradient-to-r from-blue-900 via-purple-900 to-slate-900"></div>
+                )}
                 <div className="absolute inset-0 bg-black/20"></div>
             </div>
 
@@ -115,7 +124,11 @@ const ProfilePage = () => {
                     {/* Avatar */}
                     <div className="relative">
                         <img
-                            src={profile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.username}`}
+                            src={
+                                profile.avatar
+                                    ? (profile.avatar.startsWith('http') ? profile.avatar : `${api.defaults.baseURL.replace('/api', '')}${profile.avatar}`)
+                                    : `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.username}`
+                            }
                             alt={profile.username}
                             className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-[#0F172A] bg-[#1E293B] shadow-xl object-cover"
                         />

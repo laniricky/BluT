@@ -1,12 +1,29 @@
 import React, { useState } from 'react';
-import { FaTimes, FaCamera } from 'react-icons/fa';
+import { FaTimes, FaCamera, FaImage } from 'react-icons/fa';
 import api from '../api/axios';
 
 const EditProfileModal = ({ user, onClose, onUpdate }) => {
     const [bio, setBio] = useState(user.bio || '');
-    const [avatar, setAvatar] = useState(user.avatar || '');
+    const [avatarFile, setAvatarFile] = useState(null);
+    const [coverFile, setCoverFile] = useState(null);
+    const [avatarPreview, setAvatarPreview] = useState(user.avatar || '');
+    const [coverPreview, setCoverPreview] = useState(user.coverPhoto || '');
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
+    const handleFileChange = (e, type) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (type === 'avatar') {
+                setAvatarFile(file);
+                setAvatarPreview(URL.createObjectURL(file));
+            } else {
+                setCoverFile(file);
+                setCoverPreview(URL.createObjectURL(file));
+            }
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -14,7 +31,21 @@ const EditProfileModal = ({ user, onClose, onUpdate }) => {
         setError(null);
 
         try {
-            const response = await api.put('/users/profile', { bio, avatar });
+            const formData = new FormData();
+            formData.append('bio', bio);
+            if (avatarFile) {
+                formData.append('avatar', avatarFile);
+            }
+            if (coverFile) {
+                formData.append('coverPhoto', coverFile);
+            }
+
+            const response = await api.put('/users/profile', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
             if (response.data.success) {
                 onUpdate(response.data.user);
                 onClose();
@@ -28,10 +59,10 @@ const EditProfileModal = ({ user, onClose, onUpdate }) => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="bg-[#1E293B] rounded-2xl w-full max-w-lg border border-[#334155] shadow-2xl relative">
+            <div className="bg-[#1E293B] rounded-2xl w-full max-w-lg border border-[#334155] shadow-2xl relative max-h-[90vh] overflow-y-auto scrollbar-hide">
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+                    className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10 bg-black/50 p-2 rounded-full"
                 >
                     <FaTimes size={20} />
                 </button>
@@ -46,29 +77,44 @@ const EditProfileModal = ({ user, onClose, onUpdate }) => {
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Avatar Preview/Input */}
-                        <div className="flex flex-col items-center gap-4">
+                        {/* Cover Photo Input */}
+                        <div className="relative w-full h-32 rounded-xl overflow-hidden bg-gray-800 border-2 border-dashed border-gray-600 group">
+                            <img
+                                src={coverPreview || 'https://via.placeholder.com/800x200?text=Cover+Photo'}
+                                alt="Cover Preview"
+                                className="w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity"
+                            />
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                <FaImage className="text-white text-2xl mb-1" />
+                                <span className="text-xs text-gray-300">Change Cover</span>
+                            </div>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleFileChange(e, 'cover')}
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                            />
+                        </div>
+
+                        {/* Avatar Input */}
+                        <div className="flex flex-col items-center -mt-12 relative z-10">
                             <div className="relative group cursor-pointer">
                                 <img
-                                    src={avatar || 'https://via.placeholder.com/150'}
+                                    src={avatarPreview || 'https://via.placeholder.com/150'}
                                     alt="Avatar Preview"
-                                    className="w-24 h-24 rounded-full object-cover border-4 border-[#334155]"
+                                    className="w-24 h-24 rounded-full object-cover border-4 border-[#1E293B] bg-[#1E293B]"
                                 />
-                                <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
                                     <FaCamera className="text-white text-xl" />
                                 </div>
-                            </div>
-                            <div className="w-full">
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Avatar URL</label>
                                 <input
-                                    type="text"
-                                    value={avatar}
-                                    onChange={(e) => setAvatar(e.target.value)}
-                                    className="w-full bg-[#0F172A] border border-[#334155] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors"
-                                    placeholder="https://example.com/avatar.jpg"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleFileChange(e, 'avatar')}
+                                    className="absolute inset-0 opacity-0 cursor-pointer rounded-full"
                                 />
-                                <p className="text-xs text-gray-500 mt-1">Paste an image URL (uploading coming soon)</p>
                             </div>
+                            <span className="text-xs text-gray-500 mt-2">Click to change avatar</span>
                         </div>
 
                         {/* Bio Input */}

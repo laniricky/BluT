@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FaLock, FaLink } from 'react-icons/fa';
+import Avatar from './Avatar';
 
 const VideoCard = ({ video }) => {
     return (
@@ -34,10 +35,7 @@ const VideoCard = ({ video }) => {
             </Link>
             <div className='flex gap-2'>
                 <Link to={`/u/${video.user?.username}`} className='flex-shrink-0'>
-                    <div className="w-9 h-9 rounded-full bg-slate-700 overflow-hidden">
-                        {/* Placeholder for user avatar if not present in popular video object for now */}
-                        <img src={video.user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${video.user?.username || 'user'}`} alt="avatar" className="w-full h-full object-cover" />
-                    </div>
+                    <Avatar user={video.user} size="sm" className="border border-[#334155]" />
                 </Link>
                 <div className='flex flex-col'>
                     <Link to={`/watch/${video._id}`}>

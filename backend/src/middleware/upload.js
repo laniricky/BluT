@@ -4,7 +4,7 @@ import fs from 'fs';
 
 // Ensure upload directories exist
 const createDirs = () => {
-    const dirs = ['uploads/videos', 'uploads/thumbnails'];
+    const dirs = ['uploads/videos', 'uploads/thumbnails', 'uploads/avatars', 'uploads/covers'];
     dirs.forEach(dir => {
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
@@ -20,6 +20,10 @@ const storage = multer.diskStorage({
             cb(null, 'uploads/videos');
         } else if (file.fieldname === 'thumbnail') {
             cb(null, 'uploads/thumbnails');
+        } else if (file.fieldname === 'avatar') {
+            cb(null, 'uploads/avatars');
+        } else if (file.fieldname === 'coverPhoto') {
+            cb(null, 'uploads/covers');
         } else {
             cb({ message: 'This file is not accepted' }, false);
         }
@@ -42,13 +46,13 @@ const fileFilter = (req, file, cb) => {
             console.error('File rejected: Not a video', file.mimetype);
             cb(new Error('Not a video! Please upload a video file.'), false);
         }
-    } else if (file.fieldname === 'thumbnail') {
+    } else if (['thumbnail', 'avatar', 'coverPhoto'].includes(file.fieldname)) {
         // Accept image files
         if (file.mimetype.startsWith('image/')) {
             cb(null, true);
         } else {
             console.error('File rejected: Not an image', file.mimetype);
-            cb(new Error('Not an image! Please upload an image for thumbnail.'), false);
+            cb(new Error(`Not an image! Please upload an image for ${file.fieldname}.`), false);
         }
     } else {
         console.error('File rejected: Unexpected field', file.fieldname);
@@ -69,4 +73,10 @@ const upload = multer({
 export const uploadVideo = upload.fields([
     { name: 'video', maxCount: 1 },
     { name: 'thumbnail', maxCount: 1 }
+]);
+
+// Middleware for profile uploads (avatar and coverPhoto)
+export const uploadProfile = upload.fields([
+    { name: 'avatar', maxCount: 1 },
+    { name: 'coverPhoto', maxCount: 1 }
 ]);

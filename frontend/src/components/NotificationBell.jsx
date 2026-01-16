@@ -4,6 +4,7 @@ import { FaBell } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import Avatar from './Avatar';
 
 const NotificationBell = () => {
     const { user } = useAuth();
@@ -149,11 +150,7 @@ const NotificationBell = () => {
                                     onClick={() => handleMarkAsRead(notification._id)}
                                     className={`flex gap-3 p-3 hover:bg-[#334155]/50 transition-colors ${!notification.read ? 'bg-blue-500/10' : ''}`}
                                 >
-                                    <img
-                                        src={notification.sender.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${notification.sender.username}`}
-                                        alt="avatar"
-                                        className="w-8 h-8 rounded-full object-cover mt-1"
-                                    />
+                                    <Avatar user={notification.sender} size="sm" className="mt-1" />
                                     <div className="flex-1 min-w-0">
                                         <p className="text-gray-300 text-sm">
                                             <span className="font-semibold text-white">{notification.sender.username}</span>

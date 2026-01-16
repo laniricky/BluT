@@ -6,6 +6,7 @@ import { FaCloudUploadAlt, FaSearch, FaBars, FaTimes, FaHome, FaHistory, FaTv, F
 import Tooltip from './Tooltip';
 import NotificationBell from './NotificationBell';
 import api from '../api/axios';
+import Avatar from './Avatar';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
@@ -154,9 +155,7 @@ const Navbar = () => {
                                             onClick={() => setIsProfileOpen(!isProfileOpen)}
                                             className="flex items-center gap-2 hover:bg-[#334155]/50 p-1.5 rounded-xl transition-all border border-transparent hover:border-[#334155]"
                                         >
-                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
-                                                {user.username[0].toUpperCase()}
-                                            </div>
+                                            <Avatar user={user} size="sm" />
                                             <span className="text-sm font-medium text-white hidden lg:block">{user.username}</span>
                                         </button>
 
@@ -270,9 +269,7 @@ const Navbar = () => {
                                     <>
                                         {/* User Profile Summary */}
                                         <div className="flex items-center gap-4 p-4 bg-[#1E293B]/50 rounded-2xl border border-[#334155]">
-                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                                                {user.username[0].toUpperCase()}
-                                            </div>
+                                            <Avatar user={user} size="lg" />
                                             <div className="overflow-hidden">
                                                 <p className="text-white font-bold truncate">{user.username}</p>
                                                 <p className="text-gray-400 text-xs truncate">{user.email}</p>

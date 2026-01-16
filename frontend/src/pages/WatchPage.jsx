@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { FaThumbsUp, FaRegThumbsUp, FaShare, FaEye, FaTrash, FaLock } from 'react-icons/fa';
@@ -12,8 +12,8 @@ import { VideoPlayerSkeleton, CommentSkeleton } from '../components/LoadingSkele
 import Tooltip from '../components/Tooltip';
 
 import NoteEditor from '../components/NoteEditor';
-import SceneList from '../components/SceneList';
 import VideoPlayer from '../components/VideoPlayer';
+import Avatar from '../components/Avatar';
 
 const WatchPage = () => {
     const { id } = useParams();
@@ -26,7 +26,6 @@ const WatchPage = () => {
     const [likesCount, setLikesCount] = useState(0);
     const [currentTime, setCurrentTime] = useState(0); // Track current time properly
     const [notes, setNotes] = useState([]); // Creator Notes active state
-    const [scenes, setScenes] = useState([]); // Video Scenes/Chapters
 
     // Increment view count on mount (or specific event)
     useEffect(() => {
@@ -131,20 +130,8 @@ const WatchPage = () => {
             }
         };
 
-        const fetchScenes = async () => {
-            try {
-                const response = await api.get(`/videos/${id}/scenes`);
-                if (response.data.success) {
-                    setScenes(response.data.data);
-                }
-            } catch (err) {
-                console.error("Error fetching scenes:", err);
-            }
-        };
-
         fetchVideo();
         fetchNotes();
-        fetchScenes();
     }, [id]);
 
     // Keyboard Shortcuts - MOVED TO VideoPlayer.jsx
@@ -255,19 +242,9 @@ const WatchPage = () => {
                                 src={video.videoUrl}
                                 poster={video.thumbnailUrl}
                                 notes={notes}
-                                scenes={scenes}
                                 initialTime={initialProgress}
                                 onProgress={handleProgress}
-                                // We don't have direct ref to video anymore for external control (like comments seek)
-                                // We need to handle seek from external components.
-                                // Solution: Lift seeking state or use a custom event / context?
-                                // Simple: Expose a way to seek, maybe pass a ref TO the player?
-                                // Or use a `seekTo` prop that we change?
-                                // Let's use `key` force re-render? No.
-                                // Let's pass a `ref` to VideoPlayer that it populates with its internal video ref?
-                                // VideoPlayer is a functional component, needs forwardRef.
-                                // Actually, let's keep it simple: VideoPlayer CAN accept a ref.
-                                ref={videoRef} // We need to update VideoPlayer to use forwardRef
+                                ref={videoRef}
                             />
                         </div>
 
@@ -317,16 +294,16 @@ const WatchPage = () => {
 
                             <div className="mt-4 p-4 bg-[#1E293B]/50 rounded-xl hover:bg-[#1E293B] transition-colors cursor-default">
                                 <div className="flex items-start gap-4">
-                                    <img
-                                        src={video.user?.avatar || 'https://via.placeholder.com/40'}
-                                        alt={video.user?.username}
-                                        className="w-12 h-12 rounded-full object-cover border-2 border-blue-500"
-                                    />
+                                    <Link to={`/u/${video.user?.username}`}>
+                                        <Avatar user={video.user} size="lg" className="border-2 border-blue-500" />
+                                    </Link>
                                     <div>
                                         <div className="flex items-center gap-3">
-                                            <h3 className="text-white font-bold text-lg">
-                                                {video.user?.username || 'Unknown User'}
-                                            </h3>
+                                            <Link to={`/u/${video.user?.username}`}>
+                                                <h3 className="text-white font-bold text-lg hover:text-blue-400 transition-colors">
+                                                    {video.user?.username || 'Unknown User'}
+                                                </h3>
+                                            </Link>
                                             <span className="text-gray-400 text-sm">
                                                 {video.user?.followersCount?.toLocaleString() || 0} followers
                                             </span>
@@ -412,7 +389,6 @@ const WatchPage = () => {
                         <CommentSection
                             videoId={id}
                             currentTime={videoRef.current?.currentTime || 0}
-                            scenes={scenes}
                             onSeek={(time) => {
                                 if (videoRef.current) {
                                     videoRef.current.currentTime = time;
@@ -426,23 +402,6 @@ const WatchPage = () => {
                     {/* Right Column: Recommended Videos (Desktop only) */}
                     <div className="hidden lg:block">
                         <VideoRecommendations currentVideoId={id} />
-
-                        <SceneList
-                            videoId={id}
-                            currentTime={currentTime}
-                            scenes={scenes}
-                            onSceneAdded={(newScene) => {
-                                const updatedScenes = [...scenes, newScene].sort((a, b) => a.timestamp - b.timestamp);
-                                setScenes(updatedScenes);
-                            }}
-                            onSceneDeleted={(sceneId) => setScenes(scenes.filter(s => s._id !== sceneId))}
-                            onSeek={(time) => {
-                                if (videoRef.current) {
-                                    videoRef.current.currentTime = time;
-                                    videoRef.current.play();
-                                }
-                            }}
-                        />
                     </div>
                 </div>
             </div>

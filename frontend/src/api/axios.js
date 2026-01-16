@@ -1,8 +1,11 @@
 import axios from 'axios';
 
 // Create axios instance with base URL
+// Create axios instance with base URL
+// Use window.location.hostname to dynamically determine the API URL
+// This allows the frontend to connect to the backend whether accessed via localhost or network IP
 const api = axios.create({
-    baseURL: 'http://localhost:5000/api',
+    baseURL: `http://${window.location.hostname}:5000/api`,
     headers: {
         'Content-Type': 'application/json',
     },

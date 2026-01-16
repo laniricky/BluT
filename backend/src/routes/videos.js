@@ -2,7 +2,7 @@ import express from 'express';
 import { getVideos, getVideoById, createVideo, deleteVideo, toggleLike, addView, getRecommendations, getAlgorithmicFeed, getFollowingFeed, getShorts } from '../controllers/videoController.js';
 import { addComment, getComments, deleteComment, updateComment, toggleCommentLike, toggleCommentDislike, togglePin, toggleHeart } from '../controllers/commentController.js';
 import { getNotes, addNote, deleteNote } from '../controllers/noteController.js';
-import { getScenes, addScene, deleteScene } from '../controllers/sceneController.js';
+
 import { protect, optionalProtect } from '../middleware/auth.js';
 import { uploadVideo } from '../middleware/upload.js';
 import { uploadLimiter, generalLimiter } from '../middleware/rateLimiters.js';
@@ -40,10 +40,5 @@ router.post('/comments/:id/heart', protect, toggleHeart);
 router.get('/:id/notes', getNotes);
 router.post('/:id/notes', protect, addNote);
 router.delete('/notes/:noteId', protect, deleteNote);
-
-// Scene Routes (Chapters)
-router.get('/:id/scenes', getScenes);
-router.post('/:id/scenes', protect, addScene);
-router.delete('/scenes/:sceneId', protect, deleteScene);
 
 export default router;

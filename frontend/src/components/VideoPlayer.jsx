@@ -11,7 +11,6 @@ const VideoPlayer = React.forwardRef(({
     src,
     poster,
     notes = [],
-    scenes = [],
     initialTime = 0,
     onProgress,
     onEnded
@@ -180,66 +179,7 @@ const VideoPlayer = React.forwardRef(({
         }
     };
 
-    const handlePrevScene = () => {
-        if (!scenes || scenes.length === 0 || !internalVideoRef.current) return;
 
-        const currentT = internalVideoRef.current.currentTime;
-        // Sort scenes by timestamp
-        const sortedScenes = [...scenes].sort((a, b) => a.timestamp - b.timestamp);
-
-        // Find current active scene index
-        // A scene is active if currentTime >= scene.timestamp
-        // We want to find the LAST scene that meets this criteria
-        let currentIndex = -1;
-        for (let i = 0; i < sortedScenes.length; i++) {
-            if (currentT >= sortedScenes[i].timestamp) {
-                currentIndex = i;
-            } else {
-                break;
-            }
-        }
-
-        if (currentIndex !== -1) {
-            const currentScene = sortedScenes[currentIndex];
-            const timeSinceStart = currentT - currentScene.timestamp;
-
-            // Logic: If we are more than 3 seconds into the scene, jump to START of current scene.
-            // If we are less than 3 seconds in, jump to START of PREVIOUS scene.
-            if (timeSinceStart > 3) {
-                internalVideoRef.current.currentTime = currentScene.timestamp;
-                setCurrentTime(currentScene.timestamp);
-            } else {
-                if (currentIndex > 0) {
-                    const prevScene = sortedScenes[currentIndex - 1];
-                    internalVideoRef.current.currentTime = prevScene.timestamp;
-                    setCurrentTime(prevScene.timestamp);
-                } else {
-                    // At first scene start, just go to 0
-                    internalVideoRef.current.currentTime = 0;
-                    setCurrentTime(0);
-                }
-            }
-        } else {
-            // Before any scenes, go to 0
-            internalVideoRef.current.currentTime = 0;
-            setCurrentTime(0);
-        }
-    };
-
-    const handleNextScene = () => {
-        if (!scenes || scenes.length === 0 || !internalVideoRef.current) return;
-
-        const currentT = internalVideoRef.current.currentTime;
-        const sortedScenes = [...scenes].sort((a, b) => a.timestamp - b.timestamp);
-
-        // Find first scene that is AFTER current time (with small buffer)
-        const nextScene = sortedScenes.find(s => s.timestamp > currentT + 1);
-
-        if (nextScene) {
-            internalVideoRef.current.currentTime = nextScene.timestamp;
-            setCurrentTime(nextScene.timestamp);
-        }
-    };
 
     // Auto-hide controls
     useEffect(() => {
@@ -411,14 +351,7 @@ const VideoPlayer = React.forwardRef(({
                         <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full scale-0 group-hover/timeline:scale-100 transition-transform shadow"></div>
                     </div>
 
-                    {/* Scene Markers */}
-                    {scenes.map(scene => (
-                        <div
-                            key={scene._id}
-                            className="absolute top-0 w-0.5 h-full bg-white/70 z-10"
-                            style={{ left: `${(scene.timestamp / duration) * 100}%` }}
-                        />
-                    ))}
+
 
                     {/* Hover Timestamp */}
                     {isHoveringTimestamp !== null && (
@@ -434,21 +367,9 @@ const VideoPlayer = React.forwardRef(({
                 {/* Bottom Controls */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        {scenes && scenes.length > 0 && (
-                            <button onClick={handlePrevScene} className="text-white/70 hover:text-white transition-colors focus:outline-none" title="Previous Scene">
-                                <FaStepBackward size={14} />
-                            </button>
-                        )}
-
                         <button onClick={togglePlay} className="text-white hover:text-blue-400 transition-colors focus:outline-none">
                             {isPlaying ? <FaPause size={18} /> : <FaPlay size={18} />}
                         </button>
-
-                        {scenes && scenes.length > 0 && (
-                            <button onClick={handleNextScene} className="text-white/70 hover:text-white transition-colors focus:outline-none" title="Next Scene">
-                                <FaStepForward size={14} />
-                            </button>
-                        )}
 
                         <div className="flex items-center gap-2 group/volume">
                             <button onClick={toggleMute} className="text-white hover:text-blue-400 transition-colors focus:outline-none">

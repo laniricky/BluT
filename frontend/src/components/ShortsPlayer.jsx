@@ -5,6 +5,7 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import FollowButton from './FollowButton';
 import ShortsCommentsDrawer from './ShortsCommentsDrawer';
+import Avatar from './Avatar';
 
 const ShortsPlayer = ({ video, isActive, onNext }) => {
     const videoRef = useRef(null);
@@ -180,11 +181,7 @@ const ShortsPlayer = ({ video, isActive, onNext }) => {
 
                 {/* User Avatar Action */}
                 <Link to={`/u/${video.user.username}`} className="mt-4 relative group">
-                    <img
-                        src={video.user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${video.user.username}`}
-                        alt={video.user.username}
-                        className="w-12 h-12 rounded-full border-2 border-white bg-gray-800 object-cover"
-                    />
+                    <Avatar user={video.user} size="lg" className="border-2 border-white" />
                     <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-red-600 rounded-full p-0.5" title="Follow">
                         <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center text-red-600 font-bold text-xs">+</div>
                     </div>

@@ -57,13 +57,22 @@ export const getUserProfile = async (req, res) => {
 // @access  Private
 export const updateProfile = async (req, res) => {
     try {
-        const { bio, avatar } = req.body;
+        const { bio } = req.body;
 
         // Find user and update
         const user = await User.findById(req.user.id);
 
         if (bio !== undefined) user.bio = bio;
-        if (avatar !== undefined) user.avatar = avatar;
+
+        // Handle file uploads
+        if (req.files) {
+            if (req.files.avatar && req.files.avatar[0]) {
+                user.avatar = `/uploads/avatars/${req.files.avatar[0].filename}`;
+            }
+            if (req.files.coverPhoto && req.files.coverPhoto[0]) {
+                user.coverPhoto = `/uploads/covers/${req.files.coverPhoto[0].filename}`;
+            }
+        }
 
         await user.save();
 
