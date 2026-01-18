@@ -1,4 +1,6 @@
 import express from 'express';
+import http from 'http';
+import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/database.js';
@@ -7,12 +9,31 @@ import videoRoutes from './routes/videos.js';
 import userRoutes from './routes/users.js';
 import notificationRoutes from './routes/notifications.js';
 import analyticsRoutes from './routes/analytics.js';
+import messageRoutes from './routes/messages.js';
+import { setupSocketHandlers } from './services/socketHandlers.js';
 
 // Load environment variables
 dotenv.config();
 
 // Initialize Express app
 const app = express();
+
+// Create HTTP server
+const server = http.createServer(app);
+
+// Initialize Socket.IO
+const io = new Server(server, {
+    cors: {
+        origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+        credentials: true,
+    },
+});
+
+// Setup Socket.IO handlers
+setupSocketHandlers(io);
+
+// Make io accessible in routes
+app.set('io', io);
 
 // Connect to database
 connectDB();
@@ -49,6 +70,7 @@ app.use('/api/videos', videoRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -79,7 +101,9 @@ app.use((err, req, res, next) => {
 
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔌 Socket.IO enabled`);
 });
+

@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { MessageProvider } from './context/MessageContext';
 import { FaSpinner } from 'react-icons/fa';
 
 // Lazy Load Pages
@@ -14,6 +15,7 @@ const SearchPage = lazy(() => import('./pages/SearchPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const ShortsPage = lazy(() => import('./pages/ShortsPage'));
+const MessagesPage = lazy(() => import('./pages/MessagesPage'));
 
 // Protected route wrapper
 const ProtectedRoute = ({ children }) => {
@@ -40,43 +42,53 @@ function App() {
     return (
         <BrowserRouter>
             <AuthProvider>
-                <div className="bg-[#0F172A] min-h-screen text-white">
-                    <Suspense fallback={<PageLoader />}>
-                        <Routes>
-                            <Route path="/" element={<HomePage />} />
-                            <Route path="/shorts" element={<ShortsPage />} />
-                            <Route path="/search" element={<SearchPage />} />
-                            <Route path="/login" element={<LoginPage />} />
-                            <Route path="/register" element={<RegisterPage />} />
-                            <Route path="/watch/:id" element={<WatchPage />} />
-                            <Route path="/u/:username" element={<ProfilePage />} />
-                            <Route
-                                path="/upload"
-                                element={
-                                    <ProtectedRoute>
-                                        <UploadPage />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            <Route
-                                path="/history"
-                                element={
-                                    <ProtectedRoute>
-                                        <HistoryPage />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            <Route
-                                path="/dashboard"
-                                element={
-                                    <ProtectedRoute>
-                                        <DashboardPage />
-                                    </ProtectedRoute>
-                                }
-                            />
-                        </Routes>
-                    </Suspense>
-                </div>
+                <MessageProvider>
+                    <div className="bg-[#0F172A] min-h-screen text-white">
+                        <Suspense fallback={<PageLoader />}>
+                            <Routes>
+                                <Route path="/" element={<HomePage />} />
+                                <Route path="/shorts" element={<ShortsPage />} />
+                                <Route path="/search" element={<SearchPage />} />
+                                <Route path="/login" element={<LoginPage />} />
+                                <Route path="/register" element={<RegisterPage />} />
+                                <Route path="/watch/:id" element={<WatchPage />} />
+                                <Route path="/u/:username" element={<ProfilePage />} />
+                                <Route
+                                    path="/upload"
+                                    element={
+                                        <ProtectedRoute>
+                                            <UploadPage />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/history"
+                                    element={
+                                        <ProtectedRoute>
+                                            <HistoryPage />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/dashboard"
+                                    element={
+                                        <ProtectedRoute>
+                                            <DashboardPage />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/messages"
+                                    element={
+                                        <ProtectedRoute>
+                                            <MessagesPage />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                            </Routes>
+                        </Suspense>
+                    </div>
+                </MessageProvider>
             </AuthProvider>
         </BrowserRouter>
     );

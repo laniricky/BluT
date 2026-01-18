@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaCloudUploadAlt, FaSearch, FaBars, FaTimes, FaHome, FaHistory, FaTv, FaBolt } from 'react-icons/fa';
+import { useMessages } from '../context/MessageContext';
+import { FaCloudUploadAlt, FaSearch, FaBars, FaTimes, FaHome, FaHistory, FaTv, FaBolt, FaEnvelope } from 'react-icons/fa';
 import Tooltip from './Tooltip';
 import NotificationBell from './NotificationBell';
 import api from '../api/axios';
@@ -10,6 +11,7 @@ import Avatar from './Avatar';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
+    const { totalUnread } = useMessages();
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -144,6 +146,20 @@ const Navbar = () => {
                                     <Tooltip text="Upload a new video" position="bottom">
                                         <Link to="/upload" className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:scale-105 transition-transform text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-blue-500/20">
                                             <FaCloudUploadAlt /> <span className="hidden sm:inline">Upload</span>
+                                        </Link>
+                                    </Tooltip>
+
+                                    <Tooltip text="Messages" position="bottom">
+                                        <Link
+                                            to="/messages"
+                                            className="relative p-2 text-gray-300 hover:text-white hover:bg-[#334155]/50 rounded-lg transition-all"
+                                        >
+                                            <FaEnvelope size={20} />
+                                            {totalUnread > 0 && (
+                                                <span className="absolute -top-1 -right-1 w-5 h-5 bg-purple-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                                                    {totalUnread > 9 ? '9+' : totalUnread}
+                                                </span>
+                                            )}
                                         </Link>
                                     </Tooltip>
 
@@ -282,6 +298,14 @@ const Navbar = () => {
                                             </Link>
                                             <Link to="/shorts" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-[#1E293B] px-4 py-3 rounded-xl transition-all">
                                                 <FaBolt className="text-yellow-500" /> Shorts
+                                            </Link>
+                                            <Link to="/messages" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-[#1E293B] px-4 py-3 rounded-xl transition-all relative">
+                                                <FaEnvelope className="text-purple-500" /> Messages
+                                                {totalUnread > 0 && (
+                                                    <span className="w-5 h-5 bg-purple-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                                                        {totalUnread > 9 ? '9+' : totalUnread}
+                                                    </span>
+                                                )}
                                             </Link>
                                             <Link to="/dashboard" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-[#1E293B] px-4 py-3 rounded-xl transition-all">
                                                 <FaTv className="text-purple-500" /> Dashboard
